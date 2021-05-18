@@ -48,9 +48,8 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/
 
-WORKDIR /lib
-COPY DESCRIPTION /lib/DESCRIPTION
-RUN Rscript -e 'devtools::install()'
 COPY . /lib
+WORKDIR /lib
+RUN Rscript -e 'devtools::install()'
 
 ENTRYPOINT ["Rscript"]
