@@ -1,0 +1,10 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 517156795117.dkr.ecr.eu-west-1.amazonaws.com
+      - docker build -t signature.tools.lib .
+      - docker run --rm signature.tools.lib -e 'devtools::test()'
+      - docker tag signature.tools.lib:latest 517156795117.dkr.ecr.eu-west-1.amazonaws.com/signature.tools.lib:latest
+      - docker push 517156795117.dkr.ecr.eu-west-1.amazonaws.com/signature.tools.lib:latest
