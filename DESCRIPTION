@@ -7,15 +7,11 @@ Depends: R (>= 3.2.1)
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-biocViews: 
+biocViews:
 Remotes:
     linxihui/NNLM
-Imports: 
+Imports:
     VariantAnnotation,
-    BSgenome.Hsapiens.UCSC.hg38,
-    BSgenome.Hsapiens.1000genomes.hs37d5,
-    BSgenome.Mmusculus.UCSC.mm10,
-    BSgenome.Cfamiliaris.UCSC.canFam3,
     SummarizedExperiment,
     BiocGenerics,
     GenomeInfoDb,
@@ -37,7 +33,12 @@ Imports:
     scales,
     GenomicRanges,
     IRanges,
-    BSgenome, 
+    BSgenome,
     readr,
     doRNG
+Suggests:
+    BSgenome.Hsapiens.UCSC.hg38,
+    BSgenome.Hsapiens.1000genomes.hs37d5,
+    BSgenome.Mmusculus.UCSC.mm10,
+    BSgenome.Cfamiliaris.UCSC.canFam3,
 RoxygenNote: 6.1.1
