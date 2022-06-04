@@ -4,9 +4,16 @@
 \alias{plotDNVSignatures}
 \title{Plot Dinucleotide Variant Signatures or Catalogues}
 \usage{
-plotDNVSignatures(signature_data_matrix, output_file = NULL,
-  plot_sum = TRUE, overall_title = "", add_to_titles = NULL,
-  mar = NULL, howManyInOnePage = 100, ncolumns = 3)
+plotDNVSignatures(
+  signature_data_matrix,
+  output_file = NULL,
+  plot_sum = TRUE,
+  overall_title = "",
+  add_to_titles = NULL,
+  mar = NULL,
+  howManyInOnePage = 100,
+  ncolumns = 1
+)
 }
 \arguments{
 \item{signature_data_matrix}{matrix of signatures or catalogues, signatures as columns and channels as rows. You can use either Zou or Alexandrov Style and the function will recognise the rownames and plot accordingly}
@@ -16,6 +23,8 @@ plotDNVSignatures(signature_data_matrix, output_file = NULL,
 \item{plot_sum}{whether the sum of the channels should be plotted. If plotting signatures this should be FALSE, but if plotting sample catalogues, this can be set to TRUE to display the number of mutations in each sample.}
 
 \item{overall_title}{set the overall title of the plot}
+
+\item{add_to_titles}{text to be added to the titles of each catalogue plot}
 
 \item{mar}{set the margin of the plot}
 

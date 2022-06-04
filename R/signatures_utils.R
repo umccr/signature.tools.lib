@@ -5,7 +5,7 @@
 
 #' @importFrom foreach %dopar%
 
-## Generate a random replicate of the cataloge 
+## Generate a random replicate of the cataloge
 # This method guarantees the total number of signatures is unchanged
 generateRandMuts <- function(x){
   #consider the following method as a replacement
@@ -28,7 +28,7 @@ generateRandMuts <- function(x){
 ## Remove unused Rows and Columns from the Catalogue
 ## Remove Mutations with small numbers
 preprocessCatalgue <- function(d, mut_thr){
-  
+
   ## Remove Mutations
   nmut <- apply(d, 1, sum)
   nmut <- nmut/sum(nmut)
@@ -40,13 +40,13 @@ preprocessCatalgue <- function(d, mut_thr){
 }
 
 #' Sort 96-channel Substitution Catalogues
-#' 
+#'
 #' This function sorts a matrix of 96-channel Substitution Catalogues,
 #' so that the channels (rows) are in the correct order.
 #' where each column is a catalogue and each row is a channel.
-#' rownames should be set as the name of the channel in the format 
+#' rownames should be set as the name of the channel in the format
 #' 5' base[Normal base>Tumour base]3' base, for example A[C>A]A.
-#' 
+#'
 #' @param cat catalogues matrix where each column is a catalogue and each row is a channel. Rownames should be set as the name of the channel in the format 5' base[Normal base>Tumour base]3' base, for example A[C>A]A.
 #' @return ordered catalogue
 #' @export
@@ -62,7 +62,7 @@ sortCatalogue <- function(cat){
     }
   }
   return(cat[nm,,drop=FALSE])
-  
+
 }
 
 
@@ -70,7 +70,7 @@ sortCatalogue <- function(cat){
 computeCorrelation <- function(x){
   if (ncol(x)==1){
     #if there is only one column, correlation matrix is 1
-    return(matrix(1, 1, 1)) 
+    return(matrix(1, 1, 1))
   }
   out <- matrix(NA, ncol(x), ncol(x))
   #diagonal is 1
@@ -82,7 +82,7 @@ computeCorrelation <- function(x){
   for(i in 2:ncol(x)){
     for(j in 1:(i-1)){ #up to i-1, diag already set to 1
       #message(i, " ", j)
-      out[i,j] <- cos.sim(as.numeric(x[,i]), as.numeric(x[,j]))
+      out[i,j] <- cos_sim(as.numeric(x[,i]), as.numeric(x[,j]))
       out[j,i] <- out[i,j] #upper triangular is the same
     }
   }
@@ -90,9 +90,9 @@ computeCorrelation <- function(x){
 }
 
 #' Compute Correlation (parallel)
-#' 
+#'
 #' Compute the correlation of a set of signatures/catalogues according to cosine similarity
-#' 
+#'
 #' @param x catalogues/signature matrix where each column is a catalogue/signature and each row is a channel.
 #' @param nparallel how many parallel processes to use
 #' @param parallel set to TRUE in order to use parallel
@@ -101,7 +101,7 @@ computeCorrelation <- function(x){
 computeCorrelation_parallel <- function(x,nparallel=1,parallel=FALSE){
   if (ncol(x)==1){
     #if there is only one column, correlation matrix is 1
-    return(matrix(1, 1, 1)) 
+    return(matrix(1, 1, 1))
   }
   out <- matrix(NA, ncol(x), ncol(x))
   #diagonal is 1
@@ -115,12 +115,12 @@ computeCorrelation_parallel <- function(x,nparallel=1,parallel=FALSE){
     # library(foreach)
     # library(doParallel)
     # library(doMC)
-    doMC::registerDoMC(nparallel)
+    doParallel::registerDoParallel(nparallel)
     par_res <- foreach::foreach(i=2:ncol(x)) %dopar% {
       current_res <- c()
       for(j in 1:(i-1)){ #up to i-1, diag already set to 1
         #message(i, " ", j)
-        current_res <- c(current_res,cos.sim(as.numeric(x[,i]), as.numeric(x[,j])))
+        current_res <- c(current_res,cos_sim(as.numeric(x[,i]), as.numeric(x[,j])))
       }
       current_res
     }
@@ -132,7 +132,7 @@ computeCorrelation_parallel <- function(x,nparallel=1,parallel=FALSE){
     for(i in 2:ncol(x)){
       for(j in 1:(i-1)){ #up to i-1, diag already set to 1
         #message(i, " ", j)
-        out[i,j] <- cos.sim(as.numeric(x[,i]), as.numeric(x[,j]))
+        out[i,j] <- cos_sim(as.numeric(x[,i]), as.numeric(x[,j]))
         out[j,i] <- out[i,j] #upper triangular is the same
       }
     }
@@ -141,16 +141,16 @@ computeCorrelation_parallel <- function(x,nparallel=1,parallel=FALSE){
 }
 
 #' Cosine Similarity
-#' 
+#'
 #' Compute the cosine similarity between two vectors, using the formula sum(a*b)/sqrt(sum(a^2)*sum(b^2)).
-#' 
+#'
 #' @param a first vector to compare
 #' @param b second vector to compare
 #' @return cosine similarity
 #' @export
-cos.sim <- function(a, b){
+cos_sim <- function(a, b){
   return( sum(a*b)/sqrt(sum(a^2)*sum(b^2)) )
-} 
+}
 
 #function to compute the average within cluster cosine similarity,
 #uses as input the distance matrix constructed as 1 - cosSimMatrix
@@ -169,7 +169,7 @@ withinClusterCosSim <- function(clustering,distMatrix,parallel){
         combinations <- nSamples*(nSamples - 1)/2
         #for efficiency, instead of summing lots of (1 - dist)
         #start from 1*combinations and subtract the dists
-        sumCosSim <- combinations 
+        sumCosSim <- combinations
         for(j in 1:(nSamples-1)){
           #for(w in (j+1):(nSamples)){
           sumCosSim <- sumCosSim - sum(distMatrix[samplesInCluster[j],samplesInCluster[1:nSamples > j]])
@@ -187,7 +187,7 @@ withinClusterCosSim <- function(clustering,distMatrix,parallel){
       combinations <- nSamples*(nSamples - 1)/2
       #for efficiency, instead of summing lots of (1 - dist)
       #start from 1*combinations and subtract the dists
-      sumCosSim <- combinations 
+      sumCosSim <- combinations
       for(j in 1:(nSamples-1)){
         #for(w in (j+1):(nSamples)){
         sumCosSim <- sumCosSim - sum(distMatrix[samplesInCluster[j],samplesInCluster[1:nSamples > j]])
@@ -260,7 +260,7 @@ maxBetweenClustersCosSim <- function(clustering,distMatrix,parallel){
       }
       res_table
     }
-    
+
     for (i in 1:length(res_list)){
       currentTable <- res_list[[i]]
       for(j in 1:nrow(currentTable)){
@@ -300,7 +300,7 @@ plotWithinClusterCosSim <- function(cosSimHClust,cosSimPAM,cosSimMC,outFilePath,
   jpeg(output_file,width = 600,height = 500,res = 100)
   boxplot(dists ~ clustermethod, lwd = 2, ylab = 'mean Cosine Similarity',xlab = 'method',
           main = paste0("Within Cluster Cosine Similarity\n",group,", nSig=",ns))
-  stripchart( dists ~ clustermethod, vertical = TRUE, 
+  stripchart( dists ~ clustermethod, vertical = TRUE,
               method = "jitter", add = TRUE, pch = 20, col = 'blue')
   dev.off()
 }
@@ -312,7 +312,7 @@ plotWithinClusterSilWidth <- function(sil_hclust,sil_pam,sil_MC,outFilePath,grou
   jpeg(output_file,width = 600,height = 500,res = 100)
   boxplot(dists ~ clustermethod, lwd = 2, ylab = 'mean Silhouette Width',xlab = 'method',
           main = paste0("Within Cluster Silhouette Width\n",group,", nSig=",ns))
-  stripchart( dists ~ clustermethod, vertical = TRUE, 
+  stripchart( dists ~ clustermethod, vertical = TRUE,
               method = "jitter", add = TRUE, pch = 20, col = 'blue')
   dev.off()
 }
@@ -402,60 +402,67 @@ computePropTooSimilar <- function(distMatrix,saved_nmf_runs,ns){
 
 
 #' Plot Generic Signatures or Catalogues
-#' 
+#'
 #' Function to plot one or more signatures or catalogues with an arbitrary number of channels. Channel names will not be plotted and all channels will be plotted as bars of the same colour.
-#' 
+#'
 #' @param signature_data_matrix matrix of signatures, signatures as columns and channels as rows
 #' @param output_file set output file, should end with ".jpg" or ".pdf". If output_file==null, output will not be to a file, but will still run the plot functions. The option output_file==null can be used to add this plot to a larger output file.
 #' @param plot_sum whether the sum of the channels should be plotted. If plotting signatures this should be FALSE, but if plotting sample catalogues, this can be set to TRUE to display the number of mutations in each sample.
 #' @param overall_title set the overall title of the plot
 #' @param mar set the option par(mar=mar)
+#' @param howManyInOnePage how many signatures or catalogues should be plotted on one page. Multiple pages are plotted if more signatures/catalogues to plot have been requested
+#' @param ncolumns how many columns should be used to arrange the signatures/catalogues to plot
 #' @export
 plotGenericSignatures <- function(signature_data_matrix,
                                   output_file = NULL,
                                   plot_sum = TRUE,
                                   overall_title = "",
                                   add_to_titles = NULL,
-                                  mar=NULL){
+                                  mar=NULL,
+                                  howManyInOnePage=100,
+                                  ncolumns=1){
   if(!is.null(output_file)) plottype <- substr(output_file,nchar(output_file)-2,nchar(output_file))
-  # rearr.colours <- c(rep("blue",16),rep("black",16),rep("red",16),rep("grey",16),rep("green",16),rep("pink",16))
-  nplotrows <- ceiling(ncol(signature_data_matrix)/3)
-  if(!is.null(output_file)) {
-    if(plottype=="jpg"){
-      jpeg(output_file,width = 3*800,height = nplotrows*400,res = 190)
-    }else if (plottype=="pdf"){
-      pdf(output_file,width = 3*8,height = nplotrows*4,pointsize = 26)
+  npages <- ceiling(ncol(signature_data_matrix)/howManyInOnePage)
+  if(!is.null(output_file)) rootoutput_file <- substr(output_file,1,nchar(output_file)-4)
+  for(i in 1:npages){
+    ifrom <- howManyInOnePage*(i-1) + 1
+    ito <- min(ncol(signature_data_matrix),howManyInOnePage*i)
+    tmpmatrix <- signature_data_matrix[,ifrom:ito,drop=F]
+    if (!is.null(add_to_titles)) tmpadd <- add_to_titles[ifrom:ito]
+    if(npages>1 & !is.null(output_file)) output_file <- paste0(rootoutput_file,"_",i,"of",npages,".",plottype)
+    # now plot
+    nplotrows <- ceiling(ncol(tmpmatrix)/ncolumns)
+    if(!is.null(output_file)) {
+      if(plottype=="jpg"){
+        jpeg(output_file,width = ncolumns*800,height = nplotrows*400,res = 190)
+      }else if(plottype=="pdf"){
+        pdf(output_file,width = ncolumns*8,height = nplotrows*4+0.5,pointsize = 26)
+      }
+      par(mfrow = c(nplotrows, ncolumns),omi=c(0,0,0.5,0),cex=0.7)
     }
-    par(mfrow = c(nplotrows, 3),oma=c(0,0,2,0))
-  }
-  for (pos in 1:ncol(signature_data_matrix)){
-    par(mgp=c(1,1,0))
-    if(is.null(mar)){
-      par(mar=c(3,3,2,2))
-    }else{
-      par(mar=mar)
+    for (pos in 1:ncol(tmpmatrix)){
+      par(mgp=c(1,1,0))
+      if(is.null(mar)){
+        par(mar=c(3,3.5,2,1))
+      }else{
+        par(mar=mar)
+      }
+      title <- colnames(tmpmatrix)[pos]
+      if (!is.null(add_to_titles)) title <- paste0(title," ",tmpadd[pos])
+      if (plot_sum) title <- paste0(title,"\n(",round(sum(tmpmatrix[,pos]))," mutations)")
+
+      barplot(tmpmatrix[,pos],
+              main = title,
+              names.arg = c(rep("",nrow(tmpmatrix))),
+              col="skyblue",
+              beside = TRUE,
+              xlab = "channels",
+              cex.main = 0.9,
+              cex.names = 1)
     }
-    title <- colnames(signature_data_matrix)[pos]
-    if (plot_sum) title <- paste0(title," (",round(sum(signature_data_matrix[,pos]))," mutations)")
-    if (!is.null(add_to_titles)) title <- paste0(title,"\n",add_to_titles[pos])
-    # xlabels <- rep("",96)
-    # xlabels[8] <- "C > A"
-    # xlabels[24] <- "C > G"
-    # xlabels[40] <- "C > T"
-    # xlabels[56] <- "T > A"
-    # xlabels[72] <- "T > C"
-    # xlabels[88] <- "T > G"
-    barplot(signature_data_matrix[,pos],
-            main = title,
-            #names.arg = row.names(signature_data_matrix),
-            names.arg = c(rep("",nrow(signature_data_matrix))),
-            col="skyblue",
-            beside = TRUE,
-            xlab = "channels",
-            cex.names = 1)
+    title(main = overall_title,outer = TRUE,cex.main = 1.5)
+    if(!is.null(output_file)) dev.off()
   }
-  title(main = overall_title,outer = TRUE,cex.main = 2)
-  if(!is.null(output_file)) dev.off()
 }
 
 plotGenericSignatures_withMeanSd <- function(signature_data_matrix,
@@ -464,6 +471,7 @@ plotGenericSignatures_withMeanSd <- function(signature_data_matrix,
                                              output_file = NULL,
                                              plot_sum = TRUE,
                                              overall_title = "",
+                                             add_to_titles = NULL,
                                              mar=NULL){
   if(!is.null(output_file)) plottype <- substr(output_file,nchar(output_file)-2,nchar(output_file))
   # rearr.colours <- c(rep("blue",16),rep("black",16),rep("red",16),rep("grey",16),rep("green",16),rep("pink",16))
@@ -472,64 +480,59 @@ plotGenericSignatures_withMeanSd <- function(signature_data_matrix,
     if(plottype=="jpg"){
       jpeg(output_file,width = 2*800,height = nplotrows*400,res = 190)
     }else if (plottype=="pdf"){
-      pdf(output_file,width = 2*8,height = nplotrows*4,pointsize = 26)
+      pdf(output_file,width = 2*8,height = nplotrows*4+0.5,pointsize = 26)
     }
   }
-  par(mfrow = c(nplotrows, 2),oma=c(0,0,2,0))
+  par(mfrow = c(nplotrows, 2),omi=c(0,0,0.5,0))
   par(mgp=c(1,1,0))
   if(is.null(mar)){
-    par(mar=c(3,3,2,2))
+    par(mar=c(3,3,2,1))
   }else{
     par(mar=mar)
   }
   for (pos in 1:ncol(signature_data_matrix)){
     ylimit <- c(0,max(signature_data_matrix[,pos],mean_matrix[,pos]+sd_matrix[,pos]))
     title <- colnames(signature_data_matrix)[pos]
-    if (plot_sum) title <- paste0(title," (",round(sum(signature_data_matrix[,pos]))," mutations)")
-    # xlabels <- rep("",96)
-    # xlabels[8] <- "C > A"
-    # xlabels[24] <- "C > G"
-    # xlabels[40] <- "C > T"
-    # xlabels[56] <- "T > A"
-    # xlabels[72] <- "T > C"
-    # xlabels[88] <- "T > G"
+    if (!is.null(add_to_titles)) title <- paste0(title," ",add_to_titles[pos])
+    if (plot_sum) title <- paste0(title,"\n(",round(sum(signature_data_matrix[,pos]))," mutations)")
     barplot(signature_data_matrix[,pos],
             main = title,
-            #names.arg = row.names(signature_data_matrix),
             names.arg = c(rep("",nrow(signature_data_matrix))),
             col="skyblue",
             beside = TRUE,
             xlab = "channels",
+            cex.main = 0.9,
             ylim = ylimit,
             cex.names = 1)
     barCenters <- barplot(mean_matrix[,pos],
                           main = "mean and sd of cluster",
-                          #names.arg = row.names(signature_data_matrix),
                           names.arg = c(rep("",nrow(signature_data_matrix))),
                           col="skyblue",
                           beside = TRUE,
                           xlab = "channels",
+                          cex.main = 0.9,
                           ylim = ylimit,
                           cex.names = 1)
     segments(barCenters, mean_matrix[,pos] - sd_matrix[,pos], barCenters,
              mean_matrix[,pos] + sd_matrix[,pos], lwd = 1.5)
-    
+
     arrows(barCenters, mean_matrix[,pos] - sd_matrix[,pos], barCenters,
            mean_matrix[,pos] + sd_matrix[,pos], lwd = 1.5, angle = 90,
            code = 3, length = 0.05)
   }
-  title(main = overall_title,outer = TRUE,cex.main = 2)
+  title(main = overall_title,outer = TRUE,cex.main = 1.5)
   if(!is.null(output_file)) dev.off()
 }
 
 #' Plot Substitution Signatures or Catalogues
-#' 
-#' Function to plot one or more substitution signatures or catalogues. 
-#' 
+#'
+#' Function to plot one or more substitution signatures or catalogues.
+#'
 #' @param signature_data_matrix matrix of signatures, signatures as columns and channels as rows
 #' @param output_file set output file, should end with ".jpg" or ".pdf". If output_file==null, output will not be to a file, but will still run the plot functions. The option output_file==null can be used to add this plot to a larger output file.
 #' @param plot_sum whether the sum of the channels should be plotted. If plotting signatures this should be FALSE, but if plotting sample catalogues, this can be set to TRUE to display the number of mutations in each sample.
 #' @param overall_title set the overall title of the plot
+#' @param add_to_titles text to be added to the titles of each catalogue plot
 #' @param mar set the option par(mar=mar)
 #' @param howManyInOnePage how many signatures or catalogues should be plotted on one page. Multiple pages are plotted if more signatures/catalogues to plot have been requested
 #' @param ncolumns how many columns should be used to arrange the signatures/catalogues to plot
@@ -541,7 +544,7 @@ plotSubsSignatures <- function(signature_data_matrix,
                                add_to_titles = NULL,
                                mar=NULL,
                                howManyInOnePage=100,
-                               ncolumns=3){
+                               ncolumns=1){
   # colnames(signature_data_matrix) <- sapply(colnames(signature_data_matrix),function(x) if (nchar(x)>30) paste0(substr(x,1,23),"...") else x)
   # plotcolours <- c("blue","black","red","gray","green","pink")
   plotcolours <- c(rgb(5,195,239,maxColorValue = 255),
@@ -564,36 +567,30 @@ plotSubsSignatures <- function(signature_data_matrix,
     nplotrows <- ceiling(ncol(tmpmatrix)/ncolumns)
     if(!is.null(output_file)) {
       if(plottype=="jpg"){
-        jpeg(output_file,width = ncolumns*800,height = nplotrows*320,res = 220)
+        jpeg(output_file,width = ncolumns*800,height = nplotrows*300,res = 220)
       }else if(plottype=="pdf"){
-        pdf(output_file,width = ncolumns*8,height = nplotrows*3.2,pointsize = 26)
+        pdf(output_file,width = ncolumns*8,height = nplotrows*3+0.5,pointsize = 26)
       }
-      par(mfrow = c(nplotrows, ncolumns),oma=c(0,0,2,0))
+      par(mfrow = c(nplotrows, ncolumns),omi=c(0,0,0.5,0),cex=0.7)
     }
     for (pos in 1:ncol(tmpmatrix)){
       if(is.null(mar)){
-        par(mar=c(2,3,2,2))
+        par(mar=c(2,3.5,2,1))
       }else{
         par(mar=mar)
       }
       title <- colnames(tmpmatrix)[pos]
-      if (plot_sum) title <- paste0(title," (",round(sum(tmpmatrix[,pos]))," substitutions)")
-      if (!is.null(add_to_titles)) title <- paste0(title,"\n",tmpadd[pos])
+      if (!is.null(add_to_titles)) title <- paste0(title," ",tmpadd[pos])
+      if (plot_sum) title <- paste0(title,"\n(",round(sum(tmpmatrix[,pos]))," SNVs)")
       muttypes <- c("C>A","C>G","C>T","T>A","T>C","T>G")
       xlabels <- rep("",96)
-      # xlabels[8] <- "C > A"
-      # xlabels[24] <- "C > G"
-      # xlabels[40] <- "C > T"
-      # xlabels[56] <- "T > A"
-      # xlabels[72] <- "T > C"
-      # xlabels[88] <- "T > G"
       barplot(tmpmatrix[,pos],
               main = title,
-              #names.arg = row.names(tmpmatrix),
               names.arg = xlabels,
               col=rearr.colours,
               beside = TRUE,
               las=2,
+              cex.main = 0.9,
               cex.names = 1,border = NA,space = 0.2)
       par(xpd=TRUE)
       par(usr = c(0, 1, 0, 1))
@@ -613,7 +610,7 @@ plotSubsSignatures <- function(signature_data_matrix,
       #shadowtext(x = 0.04+seq(8,88,16)/104,y = rep(-0.09,6),labels = muttypes,col = "white",bg = "black",r=0.2)
       par(xpd=FALSE)
     }
-    title(main = overall_title,outer = TRUE,cex.main = 2)
+    title(main = overall_title,outer = TRUE,cex.main = 1.5)
     if(!is.null(output_file)) dev.off()
   }
 }
@@ -639,14 +636,14 @@ plotSubsSignatures_withMeanSd <- function(signature_data_matrix,
   nplotrows <- ncol(signature_data_matrix)
   if(!is.null(output_file)) {
     if(plottype=="jpg"){
-      jpeg(output_file,width = 2*800,height = nplotrows*320,res = 220)
+      jpeg(output_file,width = 2*800,height = nplotrows*300,res = 220)
     }else if(plottype=="pdf"){
-      pdf(output_file,width = 2*8,height = nplotrows*3.2,pointsize = 26)
+      pdf(output_file,width = 2*8,height = nplotrows*3+0.5,pointsize = 26)
     }
   }
-  par(mfrow = c(nplotrows, 2),oma=c(0,0,2,0))
+  par(mfrow = c(nplotrows, 2),omi=c(0,0,0.5,0),cex=0.7)
   if(is.null(mar)){
-    par(mar=c(2,3,2,2))
+    par(mar=c(2,3,2,1))
   }else{
     par(mar=mar)
   }
@@ -661,8 +658,8 @@ plotSubsSignatures_withMeanSd <- function(signature_data_matrix,
   for (pos in 1:ncol(signature_data_matrix)){
     ylimit <- c(0,max(signature_data_matrix[,pos],mean_matrix[,pos]+sd_matrix[,pos]))
     title <- colnames(signature_data_matrix)[pos]
-    if (plot_sum) title <- paste0(title," (",round(sum(signature_data_matrix[,pos]))," substitutions)")
-    if (!is.null(add_to_titles)) title <- paste0(title,"\n",add_to_titles[pos])
+    if (!is.null(add_to_titles)) title <- paste0(title," ",add_to_titles[pos])
+    if (plot_sum) title <- paste0(title,"\n(",round(sum(signature_data_matrix[,pos]))," SNVs)")
     barplot(signature_data_matrix[,pos],
             main = title,
             #names.arg = row.names(signature_data_matrix),
@@ -671,6 +668,7 @@ plotSubsSignatures_withMeanSd <- function(signature_data_matrix,
             beside = TRUE,
             ylim = ylimit,
             las=2,
+            cex.main = 0.9,
             cex.names = 1)
     par(xpd=TRUE)
     par(usr = c(0, 1, 0, 1))
@@ -697,6 +695,7 @@ plotSubsSignatures_withMeanSd <- function(signature_data_matrix,
                           beside = TRUE,
                           ylim = ylimit,
                           las=2,
+                          cex.main = 0.9,
                           cex.names = 1,border = NA,space = 0.2)
     # segments(barCenters, mean_matrix[,pos] - sd_matrix[,pos], barCenters,
     #          mean_matrix[,pos] + sd_matrix[,pos], lwd = 1.5)
@@ -722,14 +721,14 @@ plotSubsSignatures_withMeanSd <- function(signature_data_matrix,
     text(x = textposx[4:6],y = -0.09,labels = muttypes[4:6],col = "black",font = 2)
     par(xpd=FALSE)
   }
-  title(main = overall_title,outer = TRUE,cex.main = 2)
+  title(main = overall_title,outer = TRUE,cex.main = 1.5)
   if(!is.null(output_file)) dev.off()
 }
 
 #' Plot Rearrangement Signatures or Catalogues
-#' 
-#' Function to plot one or more rearrangement signatures or catalogues. 
-#' 
+#'
+#' Function to plot one or more rearrangement signatures or catalogues.
+#'
 #' @param signature_data_matrix matrix of signatures, signatures as columns and channels as rows
 #' @param output_file set output file, should end with ".jpg" or ".pdf". If output_file==null, output will not be to a file, but will still run the plot functions. The option output_file==null can be used to add this plot to a larger output file.
 #' @param plot_sum whether the sum of the channels should be plotted. If plotting signatures this should be FALSE, but if plotting sample catalogues, this can be set to TRUE to display the number of mutations in each sample.
@@ -745,7 +744,7 @@ plotRearrSignatures <-function(signature_data_matrix,
                                add_to_titles = NULL,
                                mar=NULL,
                                howManyInOnePage=100,
-                               ncolumns=3){
+                               ncolumns=1){
   #This function plots a set of signatures in a single file, three signatures for each row.
   #signature_data_matrix is a data frame that contains the rearrangement signatures.
   #                      The columns are the signatures, while the rows are the 32 features
@@ -760,7 +759,7 @@ plotRearrSignatures <-function(signature_data_matrix,
   rearr.colours <- rep(c(rep(del_col,5),rep(td_col,5),rep(inv_col,5),transloc_col),2)
   npages <- ceiling(ncol(signature_data_matrix)/howManyInOnePage)
   if(!is.null(output_file)) rootoutput_file <- substr(output_file,1,nchar(output_file)-4)
-  
+
   for(i in 1:npages){
     ifrom <- howManyInOnePage*(i-1) + 1
     ito <- min(ncol(signature_data_matrix),howManyInOnePage*i)
@@ -773,9 +772,9 @@ plotRearrSignatures <-function(signature_data_matrix,
       if(plottype=="jpg"){
         jpeg(output_file,width = ncolumns*800,height = nplotrows*500,res = 220)
       }else if(plottype=="pdf"){
-        pdf(output_file,width = ncolumns*8,height = nplotrows*5,pointsize = 26)
+        pdf(output_file,width = ncolumns*8,height = nplotrows*5+0.5,pointsize = 26)
       }
-      par(mfrow = c(nplotrows, ncolumns),oma=c(0,0,2,0))
+      par(mfrow = c(nplotrows, ncolumns),omi=c(0,0,0.5,0),cex=0.7)
     }
     sizes <- c("1-10Kb",
                "10-100Kb",
@@ -785,13 +784,13 @@ plotRearrSignatures <-function(signature_data_matrix,
     sizes_names <- c(rep(sizes,3),"",rep(sizes,3),"")
     for (pos in 1:ncol(tmpmatrix)){
       if(is.null(mar)){
-        par(mar=c(8,3,2,2))
+        par(mar=c(8,3,2,1))
       }else{
         par(mar=mar)
       }
       title <- colnames(tmpmatrix)[pos]
-      if (plot_sum) title <- paste0(title," (",sum(tmpmatrix[,pos])," rearrangements)")
-      if (!is.null(add_to_titles)) title <- paste0(title,"\n",tmpadd[pos])
+      if (!is.null(add_to_titles)) title <- paste0(title," ",tmpadd[pos])
+      if (plot_sum) title <- paste0(title,"\n(",sum(tmpmatrix[,pos])," SVs)")
       pos <- barplot(tmpmatrix[,pos],
                      main = title,
                      names.arg = NA,
@@ -800,6 +799,7 @@ plotRearrSignatures <-function(signature_data_matrix,
                      beside = FALSE,
                      #las=2,
                      cex.names = 0.8,
+                     cex.main = 0.9,
                      #mgp=c(3,2,0),
                      border = 0,
                      space = 0.1)
@@ -848,11 +848,11 @@ plotRearrSignatures <-function(signature_data_matrix,
       text(x = start1+0.5*xsep2,y = -0.2,"clustered",col = "white")
       rect(start1+xsep2, -0.26, start1+2*xsep2, -0.14,col = non_clust_col,lwd = 0,border = NA)
       text(x = start1+1.5*xsep2,y = -0.2,"non-clustered",col = "black")
-      
+
       #restore old coordinates
       par(usr = op)
     }
-    title(main = overall_title,outer = TRUE,cex.main = 2)
+    title(main = overall_title,outer = TRUE,cex.main = 1.5)
     if(!is.null(output_file)) dev.off()
   }
 }
@@ -883,17 +883,17 @@ plotRearrSignatures_withMeanSd <-function(signature_data_matrix,
     if(plottype=="jpg"){
       jpeg(output_file,width = 2*800,height = nplotrows*500,res = 220)
     }else if (plottype=="pdf"){
-      pdf(output_file,width = 2*8,height = nplotrows*5,pointsize = 26)
+      pdf(output_file,width = 2*8,height = nplotrows*5+0.5,pointsize = 26)
     }
   }
-  par(mfrow = c(nplotrows, 2),oma=c(0,0,2,0))
+  par(mfrow = c(nplotrows, 2),omi=c(0,0,0.5,0),cex=0.7)
   sizes <- c("1-10Kb",
              "10-100Kb",
              "100Kb-1Mb",
              "1Mb-10Mb",
              ">10Mb")
   sizes_names <- c(rep(sizes,3),"",rep(sizes,3),"")
-  
+
   rearrAxis <- function(barCenters,sizes_names){
     axis(1,
          las=2,
@@ -940,21 +940,21 @@ plotRearrSignatures_withMeanSd <-function(signature_data_matrix,
     text(x = start1+0.5*xsep2,y = -0.2,"clustered",col = "white")
     rect(start1+xsep2, -0.26, start1+2*xsep2, -0.14,col = non_clust_col,lwd = 0,border = NA)
     text(x = start1+1.5*xsep2,y = -0.2,"non-clustered",col = "black")
-    
+
     #restore old coordinates
     par(usr = op)
   }
-  
+
   for (pos in 1:ncol(signature_data_matrix)){
     ylimit <- c(0,max(signature_data_matrix[,pos],mean_matrix[,pos]+sd_matrix[,pos]))
     if(is.null(mar)){
-      par(mar=c(8,3,2,2))
+      par(mar=c(8,3,2,1))
     }else{
       par(mar=mar)
     }
     title <- colnames(signature_data_matrix)[pos]
-    if (plot_sum) title <- paste0(title," (",sum(signature_data_matrix[,pos])," rearrangements)")
-    if (!is.null(add_to_titles)) title <- paste0(title,"\n",add_to_titles[pos])
+    if (!is.null(add_to_titles)) title <- paste0(title," ",add_to_titles[pos])
+    if (plot_sum) title <- paste0(title,"\n(",sum(signature_data_matrix[,pos])," SVs)")
     barCenters <- barplot(signature_data_matrix[,pos],
                           main = title,
                           names.arg = NA,
@@ -966,6 +966,7 @@ plotRearrSignatures_withMeanSd <-function(signature_data_matrix,
                           #mgp=c(3,2,0),
                           border = 0,
                           ylim = ylimit,
+                          cex.main = 0.9,
                           space = 0.1)
     rearrAxis(barCenters,sizes_names)
     barCenters <- barplot(mean_matrix[,pos],
@@ -976,6 +977,7 @@ plotRearrSignatures_withMeanSd <-function(signature_data_matrix,
                           #border = NA,
                           beside = FALSE,
                           ylim = ylimit,
+                          cex.main = 0.9,
                           las=2,
                           border = 0,
                           space = 0.1)
@@ -988,24 +990,24 @@ plotRearrSignatures_withMeanSd <-function(signature_data_matrix,
     #        code = 3, length = 0.05)
     rearrAxis(barCenters,sizes_names)
   }
-  title(main = overall_title,outer = TRUE,cex.main = 2)
+  title(main = overall_title,outer = TRUE,cex.main = 1.5)
   if(!is.null(output_file)) dev.off()
 }
 
 
-plot.CosSimMatrix <- function(CosSimMatrix,output_file,dpi=300,xlabel = "",ylabel = "",thresholdMark = 0.9,extraWidth = 500,extraHeight = 500,ndigitsafterzero = 2){
+plotCosSimMatrix <- function(CosSimMatrix,output_file,dpi=300,xlabel = "",ylabel = "",thresholdMark = 0.9,extraWidth = 500,extraHeight = 500,ndigitsafterzero = 2){
   # library("ggplot2")
-  
-  # Set up the vectors                           
+
+  # Set up the vectors
   signatures.names <- colnames(CosSimMatrix)
   sample.names <- row.names(CosSimMatrix)
-  
+
   # Create the data frame
   df <- expand.grid(sample.names,signatures.names)
-  df$value <- unlist(CosSimMatrix)   
+  df$value <- unlist(CosSimMatrix)
   df$labels <- sprintf(paste0("%.",ndigitsafterzero,"f"), df$value)
   df$labels[df$value==0] <- ""
-  
+
   #Plot the Data (500+150*nsamples)x1200
   g <- ggplot2::ggplot(df, ggplot2::aes(Var1, Var2)) + ggplot2::geom_point(ggplot2::aes(size = value, colour = value>thresholdMark)) + ggplot2::theme_bw() + ggplot2::xlab(xlabel) + ggplot2::ylab(ylabel)
   g <- g + ggplot2::scale_size_continuous(range=c(0,10)) + ggplot2::geom_text(ggplot2::aes(label = labels))
@@ -1016,38 +1018,38 @@ plot.CosSimMatrix <- function(CosSimMatrix,output_file,dpi=300,xlabel = "",ylabe
   ggplot2::ggsave(filename = output_file,dpi = dpi,height = h,width = w,limitsize = FALSE)
 }
 
-#' plot.CosSimSignatures
-#' 
+#' plotCosSimSignatures
+#'
 #' Plot a matrix of cosine similarities between two sets of signatures.
-#' 
+#'
 #' @param sig1 matrix with signatures as columns
 #' @param sig2 matrix with signatures as columns
-#' @param output_file name of the output file (jpg)
-#' @param dpi dots per inch
-#' @param xlabel label for x axis
-#' @param ylabel label for y axis
+#' @param output_file name of the output file (pdf), optional
+#' @param cex.numbers scale the text used for the numbers in the matrix
+#' @param circlesColBasic colour used for the circles
+#' @param circlesColHighlight colour used for the circles that pass the thresholdMark
 #' @export
-plot.CosSimSignatures <- function(sig1,sig2,output_file,dpi=300,xlabel = "",ylabel = ""){
-  cos.sim <- function(a, b){
-    return( sum(a*b)/sqrt(sum(a^2)*sum(b^2)) )
-  }  
-  cos_sim_df <- data.frame()
-  for (s in colnames(sig1)){
-    for(a in colnames(sig2)){
-      cos_sim_df[s,a] <- cos.sim(sig1[,s],sig2[,a])
-    }
-  }
-  plot.CosSimMatrix(cos_sim_df,output_file,dpi=dpi,xlabel = xlabel,ylabel = ylabel)
+plotCosSimSignatures <- function(sig1,sig2,output_file = NULL,
+                                 thresholdMark = NULL,
+                                 cex.numbers = 0.7,
+                                 circlesColBasic = "#A1CAF1",
+                                 circlesColHighlight = "#F6A600"){
+  sigcor <- computeCorrelationOfTwoSetsOfSigs(sig1,sig2)
+  plotMatrix(sigcor,output_file = output_file,
+             thresholdMark = thresholdMark,
+             cex.numbers = cex.numbers,
+             circlesColBasic = circlesColBasic,
+             circlesColHighlight = circlesColHighlight)
 }
 
 #' Find closest COSMIC30 signatures
-#' 
-#' Compares a set of signatures to the COSMIC30 signatures and 
+#'
+#' Compares a set of signatures to the COSMIC30 signatures and
 #' returns the list of signatures identified. For example,
 #' c("C1","C3","N1","C13","N2") means that Cosmic (C) signatures 1, 3 and 13 were found, while
 #' signatures N1 and N2 are unknown signatures (N for not found), based on a similarity threshold (similarity >=threshold)
 #' comparing to COSMIC30
-#' 
+#'
 #' @param sigs matrix with 96-channel substitution signatures as columns
 #' @param threshold cosine similarity threshold
 #' @return the list of signatures identified
@@ -1059,7 +1061,7 @@ findClosestCOSMIC30 <- function(sigs,threshold){
   cos_sim_df <- data.frame()
   for (s in colnames(sigs)){
     for(a in colnames(cosmic30)){
-      cos_sim_df[s,a] <- cos.sim(sigs[,s],cosmic30[,a])
+      cos_sim_df[s,a] <- cos_sim(sigs[,s],cosmic30[,a])
     }
   }
   max.sim <- apply(cos_sim_df,1,max)
@@ -1073,13 +1075,13 @@ findClosestCOSMIC30 <- function(sigs,threshold){
 #automatically detect similarity with sum of two COSMIC30
 
 #' Find closest COSMIC30 signatures or combination of COSMIC30
-#' 
-#' Compares a set of signatures to the COSMIC30 signatures or the simple sum of all combinations of two COSMIC signatures and 
+#'
+#' Compares a set of signatures to the COSMIC30 signatures or the simple sum of all combinations of two COSMIC signatures and
 #' returns the list of signatures identified. For example,
 #' c("C1","C3","N1","C2+13","N2") means that Cosmic (C) signatures 1, 3 and 2+13 were found, while
 #' signatures N1 and N2 are unknown signatures (N for not found), based on a similarity threshold (similarity >=threshold)
 #' comparing to COSMIC30 or the sum of two COSMIC30 sigs.
-#' 
+#'
 #' @param sigs matrix with 96-channel substitution signatures as columns
 #' @param threshold cosine similarity threshold
 #' @return the list of signatures identified
@@ -1099,7 +1101,7 @@ findClosestCOSMIC30andCombinations <- function(sigs,threshold){
   cos_sim_df <- data.frame()
   for (s in colnames(sigs)){
     for(a in colnames(cosmic30)){
-      cos_sim_df[s,a] <- cos.sim(sigs[,s],cosmic30[,a])
+      cos_sim_df[s,a] <- cos_sim(sigs[,s],cosmic30[,a])
     }
   }
   max.sim <- apply(cos_sim_df,1,max)
@@ -1112,13 +1114,13 @@ findClosestCOSMIC30andCombinations <- function(sigs,threshold){
 
 
 #' Find closest COSMIC30 signatures
-#' 
-#' Compares a set of signatures to the COSMIC30 signatures and 
+#'
+#' Compares a set of signatures to the COSMIC30 signatures and
 #' returns the list of signatures identified and the corresponding similarity. For example,
-#' list(cosmic = c("C1","C3","C13"),cos.sim = c(0.94,0.85,0.7))
+#' list(cosmic = c("C1","C3","C13"),cos_sim = c(0.94,0.85,0.7))
 #' means that Cosmic (C) signatures 1, 3 and 13 were found, while
 #' the corrsponding similarities to those signatures are 0.94, 0.85 and 0.7
-#' 
+#'
 #' @param sigs matrix with 96-channel substitution signatures as columns
 #' @return the list of signatures identified and corresponding similarities
 #' @export
@@ -1129,7 +1131,7 @@ findClosestCOSMIC30_withSimilarity <- function(sigs){
   cos_sim_df <- data.frame()
   for (s in colnames(sigs)){
     for(a in colnames(cosmic30)){
-      cos_sim_df[s,a] <- cos.sim(sigs[,s],cosmic30[,a])
+      cos_sim_df[s,a] <- cos_sim(sigs[,s],cosmic30[,a])
     }
   }
   max.sim <- apply(cos_sim_df,1,max)
@@ -1142,13 +1144,13 @@ findClosestCOSMIC30_withSimilarity <- function(sigs){
 }
 
 #' Find closest COSMIC30 signatures or combination of COSMIC30
-#' 
-#' Compares a set of signatures to the COSMIC30 signatures or the simple sum of all combinations of two COSMIC signatures and 
+#'
+#' Compares a set of signatures to the COSMIC30 signatures or the simple sum of all combinations of two COSMIC signatures and
 #' returns the list of signatures identified and the corresponding similarity. For example,
-#' list(cosmic = c("C1","C3","C2+C13"),cos.sim = c(0.94,0.85,0.7))
+#' list(cosmic = c("C1","C3","C2+C13"),cos_sim = c(0.94,0.85,0.7))
 #' means that Cosmic (C) signatures 1, 3 and 2+13 were found, while
 #' the corrsponding similarities to those signatures are 0.94, 0.85 and 0.7
-#' 
+#'
 #' @param sigs matrix with 96-channel substitution signatures as columns
 #' @return the list of signatures identified and corresponding similarities
 #' @export
@@ -1167,7 +1169,7 @@ findClosestCOSMIC30andCombinations_withSimilarity <- function(sigs){
   cos_sim_df <- data.frame()
   for (s in colnames(sigs)){
     for(a in colnames(cosmic30)){
-      cos_sim_df[s,a] <- cos.sim(sigs[,s],cosmic30[,a])
+      cos_sim_df[s,a] <- cos_sim(sigs[,s],cosmic30[,a])
     }
   }
   max.sim <- apply(cos_sim_df,1,max)
@@ -1191,7 +1193,7 @@ findClosestRearrSigsBreast560 <- function(sigs,threshold){
   cos_sim_df <- data.frame()
   for (s in colnames(sigs)){
     for(a in colnames(RS.Breast560)){
-      cos_sim_df[s,a] <- cos.sim(sigs[,s],RS.Breast560[,a])
+      cos_sim_df[s,a] <- cos_sim(sigs[,s],RS.Breast560[,a])
     }
   }
   max.sim <- apply(cos_sim_df,1,max)
@@ -1214,7 +1216,7 @@ findClosestRearrSigsBreast560_withSimilarity <- function(sigs){
   cos_sim_df <- data.frame()
   for (s in colnames(sigs)){
     for(a in colnames(RS.Breast560)){
-      cos_sim_df[s,a] <- cos.sim(sigs[,s],RS.Breast560[,a])
+      cos_sim_df[s,a] <- cos_sim(sigs[,s],RS.Breast560[,a])
     }
   }
   max.sim <- apply(cos_sim_df,1,max)
@@ -1227,9 +1229,9 @@ findClosestRearrSigsBreast560_withSimilarity <- function(sigs){
 }
 
 #' KL-divergence
-#' 
+#'
 #' Compute the Kullback-Leibler Divergence between two matrices. In order to compute the divergence, .Machine$double.eps is added to matrices zero entries.
-#' 
+#'
 #' @param m1 original matrix
 #' @param m2 matrix to be used to approximate m1
 #' @return KL-Divergence
@@ -1248,9 +1250,9 @@ KLD <- function(m1,m2){
 #samples/sigantures are ararnged by columns
 
 #' computeCorrelationOfTwoSetsOfSigs
-#' 
+#'
 #' Compute the cosine similarity between two sets of signatures, which results in a cosine similarity matrix.
-#' 
+#'
 #' @param sig1 matrix of signatures, with signatures as columns
 #' @param sig2 matrix of signatures, with signatures as columns
 #' @return cosine similarity matrix
@@ -1259,7 +1261,7 @@ computeCorrelationOfTwoSetsOfSigs <- function(sigs1,sigs2){
   cos_sim_df <- data.frame()
   for (s in colnames(sigs1)){
     for(a in colnames(sigs2)){
-      cos_sim_df[s,a] <- cos.sim(sigs1[,s],sigs2[,a])
+      cos_sim_df[s,a] <- cos_sim(sigs1[,s],sigs2[,a])
     }
   }
   return(cos_sim_df)
@@ -1286,9 +1288,9 @@ normaliseSamples <- function(cat){
 }
 
 #' RMSE
-#' 
+#'
 #' Function to compute the root mean squared error between two matrices.
-#' 
+#'
 #' @param m1 first matrix to compare
 #' @param m2 second matrix to compare
 #' @return root mean squared error
@@ -1298,9 +1300,9 @@ RMSE <- function(m1,m2){
 }
 
 #' writeTable
-#' 
+#'
 #' Utility function for simple write table with the following parameters: (sep = "\\t",quote = FALSE,row.names = TRUE,col.names = TRUE).
-#' 
+#'
 #' @param t R table or matrix
 #' @param file name of the output plain text file
 #' @export
@@ -1309,9 +1311,9 @@ writeTable <- function(t,file){
 }
 
 #' readTable
-#' 
+#'
 #' Utility function for simple read table with the following parameters: (sep = "\\t",check.names = FALSE,header = TRUE,stringsAsFactors = FALSE).
-#' 
+#'
 #' @param file name of the plain text file to read
 #' @export
 readTable <- function(file){
@@ -1323,11 +1325,11 @@ readTable <- function(file){
 #author: Greg Snow <538280@gmail.com>
 shadowtext <- function(x, y=NULL, labels, col='white', bg='black',
                        theta= seq(pi/4, 2*pi, length.out=8), r=0.1, ... ) {
-  
+
   xy <- xy.coords(x,y)
   xo <- r*strwidth('A')
   yo <- r*strheight('A')
-  
+
   for (i in theta) {
     text( xy$x + cos(i)*xo, xy$y + sin(i)*yo, labels, col=bg, ... )
   }
@@ -1335,52 +1337,59 @@ shadowtext <- function(x, y=NULL, labels, col='white', bg='black',
 }
 
 #' getOrganSignatures
-#' 
+#'
 #' This function returns the organ-specific signatures for a given organ and mutation type as defined in Degasperi et al. 2020 Nat Cancer paper.
-#' 
-#' @param typemut either subs or rearr
+#'
+#' @param typemut either subs, DNV or rearr
 #' @param organ one of the following: "Biliary", "Bladder", "Bone_SoftTissue", "Breast", "Cervix", "CNS", "Colorectal", "Esophagus", "Head_neck", "Kidney", "Liver", "Lung", "Lymphoid", "Ovary", "Pancreas", "Prostate", "Skin", "Stomach", "Uterus"
+#' @param version version "1" includes subs or rearr (ICGC cohort) organ-specific signatures from Degasperi et al. 2020, while version "2" includes the improved subs organ-specific signatures from ICGC as well as Hartwig and GEL, and the new DNV signatures. Set to "latest" to get the latest signature available for a given mutation type.
+#' @param cohort for version 1 signatures only ICGC cohort is available, while for version 2 signatures ICGC, Hartwig and GEL cohort can be requested. Use "best" to get the most appropriate cohort for a given organ.
 #' @return organ-specific signatures matrix
 #' @references A. Degasperi, T. D. Amarante, J. Czarnecki, S. Shooter, X. Zou, D. Glodzik, S. Morganella, A. S. Nanda, C. Badja, G. Koh, S. E. Momen, I. Georgakopoulos-Soares, J. M. L. Dias, J. Young, Y. Memari, H. Davies, S. Nik-Zainal. A practical framework and online tool for mutational signature analyses show intertissue variation and driver dependencies, Nature Cancer, https://doi.org/10.1038/s43018-020-0027-5, 2020.
 #' @export
-getOrganSignatures <- function(organ,typemut="subs"){
-  
-  if(typemut=="subs"){
-    available_organs <- unique(sapply(colnames(all_organ_sigs_subs),function(x){
-      txtspl <- strsplit(x,split = "_")[[1]]
-      paste(txtspl[1:(length(txtspl)-1)],collapse = "_")
-    }))
-    if (!(organ %in% available_organs)) {
-      message("Organ ",organ, " not available for mutation type ",typemut)
-    }
+getOrganSignatures <- function(organ,version="latest",cohort="best",typemut="subs",verbose = TRUE){
+  sigs <- NULL
+  if(typemut=="subs" & version=="1" & (cohort=="best" | cohort=="ICGC")){
     sigs <- all_organ_sigs_subs[,colnames(all_organ_sigs_subs)[grep(pattern = paste0("^",organ),colnames(all_organ_sigs_subs))]]
-  }else if(typemut=="rearr"){
-    available_organs <- unique(sapply(colnames(all_organ_sigs_rearr),function(x){
-      txtspl <- strsplit(x,split = "_")[[1]]
-      paste(txtspl[1:(length(txtspl)-1)],collapse = "_")
-    }))
-    if (!(organ %in% available_organs)) {
-      message("Organ ",organ, " not available for mutation type ",typemut)
-    }
+  }else if(typemut=="rearr" & (version=="1" | version=="latest") & (cohort=="best" | cohort=="ICGC")){
     sigs <- all_organ_sigs_rearr[,colnames(all_organ_sigs_rearr)[grep(pattern = paste0("^",organ),colnames(all_organ_sigs_rearr))]]
+  }else if(typemut=="DNV" & (version=="2" | version=="latest")){
+    if(cohort=="best") cohort <- "GEL"
+    sigs <- organSignaturesDBSv1.01[,grepl(colnames(organSignaturesDBSv1.01),pattern = paste0(cohort,"-",organ)),drop=F]
+  }else if(typemut=="subs" & (version=="2" | version=="latest")){
+    if(cohort=="best") {
+      cohort <- "GEL"
+      if(organ=="Esophagus" | organ=="Head_neck") cohort <- "ICGC"
+    }
+    sigs <- organSignaturesSBSv2.03[,grepl(colnames(organSignaturesSBSv2.03),pattern = paste0(cohort,"-",organ)),drop=F]
   }
+  if(ncol(sigs)==0 & verbose) message("[warning getOrganSignatures] Organ ",organ, " not available for mutation type ",typemut, ", version ",version, " and cohort ",cohort,".")
   return(sigs)
 }
 
 #' convertExposuresFromOrganToRefSigs
-#' 
-#' This function converts the exposures matrix obatined from fitting organ-specific signatures into reference signatures exposures as defined in Degasperi et al. 2020 Nat Cancer paper.
-#' 
-#' @param typemut either subs or rearr
+#'
+#' This function converts the exposures matrix obatined from fitting organ-specific signatures into reference signatures exposures.
+#' The function will detect the version of the signatures automatically.
+#'
+#' @param typemut either subs, DNV or rearr
 #' @param expMatrix exposures matrix obatined from fitting organ-specific signatures
 #' @return exposure matrix converted in reference signatures exposures
 #' @references A. Degasperi, T. D. Amarante, J. Czarnecki, S. Shooter, X. Zou, D. Glodzik, S. Morganella, A. S. Nanda, C. Badja, G. Koh, S. E. Momen, I. Georgakopoulos-Soares, J. M. L. Dias, J. Young, Y. Memari, H. Davies, S. Nik-Zainal. A practical framework and online tool for mutational signature analyses show intertissue variation and driver dependencies, Nature Cancer, https://doi.org/10.1038/s43018-020-0027-5, 2020.
 #' @export
 convertExposuresFromOrganToRefSigs <- function(expMatrix,typemut="subs"){
+  exposures <- NULL
   if(typemut=="subs"){
-    t(conversion_matrix_subs[rownames(expMatrix),]) %*% as.matrix(expMatrix)
+    if(all(rownames(expMatrix) %in% rownames(conversion_matrix_subs))){
+      exposures <- t(conversion_matrix_subs[rownames(expMatrix),]) %*% as.matrix(expMatrix)
+    }else if(all(rownames(expMatrix) %in% rownames(conversionMatrixSBSv2.03))){
+      exposures <- t(conversionMatrixSBSv2.03[rownames(expMatrix),]) %*% as.matrix(expMatrix)
+    }
   }else if(typemut=="rearr"){
-    t(conversion_matrix_rearr[rownames(expMatrix),]) %*% as.matrix(expMatrix)
+    exposures <- t(conversion_matrix_rearr[rownames(expMatrix),]) %*% as.matrix(expMatrix)
+  }else if(typemut=="DNV"){
+    exposures <- t(conversionMatrixDBSv1.01[rownames(expMatrix),]) %*% as.matrix(expMatrix)
   }
+  return(exposures)
 }
 

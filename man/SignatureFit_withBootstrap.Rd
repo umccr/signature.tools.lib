@@ -2,12 +2,26 @@
 % Please edit documentation in R/SignatureFitLib.R
 \name{SignatureFit_withBootstrap}
 \alias{SignatureFit_withBootstrap}
-\title{Mutational Signatures Fit with Bootstrap}
+\title{Mutational Signatures Fit with Bootstrap (deprecated)}
 \usage{
-SignatureFit_withBootstrap(cat, signature_data_matrix, nboot = 100,
-  threshold_percent = 5, threshold_p.value = 0.05, method = "KLD",
-  bf_method = "CosSim", alpha = -1, verbose = TRUE, doRound = TRUE,
-  nparallel = 1, n_sa_iter = 500, randomSeed = NULL)
+SignatureFit_withBootstrap(
+  cat,
+  signature_data_matrix,
+  nboot = 100,
+  exposureFilterType = "fixedThreshold",
+  giniThresholdScaling = 10,
+  threshold_percent = 5,
+  threshold_p.value = 0.05,
+  method = "KLD",
+  bf_method = "CosSim",
+  alpha = -1,
+  verbose = TRUE,
+  doRound = FALSE,
+  nparallel = 1,
+  n_sa_iter = 500,
+  randomSeed = NULL,
+  showDeprecated = TRUE
+)
 }
 \arguments{
 \item{cat}{catalogue matrix, patients as columns, channels as rows}
@@ -15,6 +29,10 @@ SignatureFit_withBootstrap(cat, signature_data_matrix, nboot = 100,
 \item{signature_data_matrix}{signatures, signatures as columns, channels as rows}
 
 \item{nboot}{number of bootstraps to use, more bootstraps more accurate results}
+
+\item{exposureFilterType}{use either fixedThreshold or giniScaledThreshold. When using fixedThreshold, exposures will be removed based on a fixed percentage with respect to the total number of mutations (threshold_percent will be used). When using giniScaledThreshold each signature will used a different threshold calculated as (1-Gini(signature))*giniThresholdScaling}
+
+\item{giniThresholdScaling}{scaling factor for the threshold type giniScaledThreshold, which is based on the Gini score of a signature}
 
 \item{threshold_percent}{threshold in percentage of total mutations in a sample, only exposures larger than threshold are considered}
 
@@ -35,11 +53,15 @@ SignatureFit_withBootstrap(cat, signature_data_matrix, nboot = 100,
 \item{n_sa_iter}{set max Simulated Annealing iterations if method==SA}
 
 \item{randomSeed}{set an integer random seed}
+
+\item{showDeprecated}{set to FALSE to switch off the deprecated warning messsage}
 }
 \value{
 returns the activities/exposures of the signatures in the given sample and other information, such as p-values and exposures of individual bootstrap runs.
 }
 \description{
+This function is deprecated. You can still use it, but we advise to use the function Fit instead, 
+which provides a unified interface for basic signature fit with/without bootstrap.
 Fit a given set of mutational signatures into mutational catalogues to extimate the 
 activty/exposure of each of the given signatures in the catalogues. Implementation 
 of method similar to Huang et al. 2017, Detecting presence of mutational signatures with 

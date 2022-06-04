@@ -4,9 +4,16 @@
 \alias{plotGenericSignatures}
 \title{Plot Generic Signatures or Catalogues}
 \usage{
-plotGenericSignatures(signature_data_matrix, output_file = NULL,
-  plot_sum = TRUE, overall_title = "", add_to_titles = NULL,
-  mar = NULL)
+plotGenericSignatures(
+  signature_data_matrix,
+  output_file = NULL,
+  plot_sum = TRUE,
+  overall_title = "",
+  add_to_titles = NULL,
+  mar = NULL,
+  howManyInOnePage = 100,
+  ncolumns = 1
+)
 }
 \arguments{
 \item{signature_data_matrix}{matrix of signatures, signatures as columns and channels as rows}
@@ -18,6 +25,10 @@ plotGenericSignatures(signature_data_matrix, output_file = NULL,
 \item{overall_title}{set the overall title of the plot}
 
 \item{mar}{set the option par(mar=mar)}
+
+\item{howManyInOnePage}{how many signatures or catalogues should be plotted on one page. Multiple pages are plotted if more signatures/catalogues to plot have been requested}
+
+\item{ncolumns}{how many columns should be used to arrange the signatures/catalogues to plot}
 }
 \description{
 Function to plot one or more signatures or catalogues with an arbitrary number of channels. Channel names will not be plotted and all channels will be plotted as bars of the same colour.

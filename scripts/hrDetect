@@ -1,0 +1,434 @@
+#!/usr/bin/env Rscript
+
+library(getopt)
+
+how_to <- function(){
+  message(" ")
+  message("This script runs the HRDetect pipeline of the signature.tools.lib R package.")
+  message(" ")
+  message("Run this script as follows:")
+  message(" ")
+  message("hrDetect [OPTIONS]")
+  message(" ")
+  message("Available options:")
+  message("  -i, --input=INPUTTABLE    Tab separate input table with the list of files for")
+  message("                              each sample. Columns of INPUTTABLE should be:")
+  message("                              sample, SNV_vcf_files, SNV_tab_files,")
+  message("                              Indels_vcf_files, Indels_tab_files, CNV_tab_files,")
+  message("                              SV_bedpe_files. Note that only one column of")
+  message("                              SNV_vcf_files and SNV_tab_files is necessary")
+  message("  -o, --outdir=OUTDIR       Name of the output directory. If omitted a name will")
+  message("                              be given automatically.")
+  message("  -O, --organ=ORGAN         When using RefSigv1 or RefSigv2 as SNVSV or SVSV,")
+  message("                              organ-specific signatures will be used.")
+  message("                              If SNVSV is COSMICv2 or COSMICv3.2, then a")
+  message("                              selection of signatures found in the given organ")
+  message("                              will be used. Available organs depend on the selected")
+  message("                              SNVSV and SVSV. For RefSigv1 or RefSigv2: Biliary,")
+  message("                              Bladder, Bone_SoftTissue, Breast, Cervix (v1 only),")
+  message("                              CNS, Colorectal, Esophagus, Head_neck, Kidney,")
+  message("                              Liver, Lung, Lymphoid, NET (v2 only),")
+  message("                              Oral_Oropharyngeal (v2 only), Ovary, Pancreas,")
+  message("                              Prostate, Skin, Stomach, Uterus.")
+  message("  -s, --snvsigversion=SNVSV Either COSMICv2, COSMICv3.2, RefSigv1 or RefSigv2.")
+  message("                              When SNVSV=RefSigv2 and an organ is specified,")
+  message("                              signature fit for SNVs will be performed with FitMS")
+  message("  -S, --svsigversion=SVSV   Currently only RefSigv1 is available for SV signatures")
+  message("  -l, --snvsignames=SNVSN   If no ORGAN is specified, SIGNAMES can be used to")
+  message("                              provide a comma separated list of signature names")
+  message("                              to select from the COSMIC or reference signatures,")
+  message("                              depending on the SIGVERSION requested. For example,")
+  message("                              for COSMICv3.2 use: SBS1,SBS2,SBS3.")
+  message("  -L, --svsignames=SVSN     If no ORGAN is specified, SIGNAMES can be used to")
+  message("                              provide a comma separated list of signature names")
+  message("                              to select from the COSMIC or reference signatures,")
+  message("                              depending on the SIGVERSION requested. For example,")
+  message("                              for COSMICv3.2 use: SBS1,SBS2,SBS3.")
+  message("  -b, --bootstrap           Request HRDetect with bootstrap")
+  message("  -t, --filtertype=FTYPE    FTYPE is either fixedThreshold or giniScaledThreshold.")
+  message("                              When using fixedThreshold, exposures will be removed")
+  message("                              based on a fixed percentage with respect to the")
+  message("                              total number of mutations (THRPERC will be")
+  message("                              used). When using giniScaledThreshold each signature")
+  message("                              will used a different threshold calculated as")
+  message("                              (1-Gini(signature))*GINISCALING. If not specified")
+  message("                              then FTYPE=fixedThreshold")
+  message("  -p, --thresholdperc=THRPERC")
+  message("                            THRPERC is a threshold in percentage of total mutations")
+  message("                              in a sample, only exposures larger than THRPERC are")
+  message("                              considered. If not specified THRPERC=5.")
+  message("  -d, --giniscaling=GINISCALING")
+  message("                            GINISCALING is a scaling factor for the threshold type")
+  message("                              giniScaledThreshold, which is based on the Gini score")
+  message("                              of a signature. If not specified GINISCALING=10.")
+  message("  -x, --snvfitfile=SNVFF    SNVFF is the file name of an rData file containing a Fit")
+  message("                              or FitMS result object. This parameter should be used")
+  message("                              when the user wants to customise the subs fit outside")
+  message("                              the HRDetect pipeline, e.g. using the signatureFit")
+  message("                              command line script. If custom signatures were used,")
+  message("                              values CSNV3 and CSNV8 can be used to specify which")
+  message("                              custom signatures correspond to the HRDetect parameters")
+  message("                              SNV3 and SNV8.")
+  message("  -y, --snv3altname=CSNV3   Custom signature name that will be considered as SNV3")
+  message("                              input for HRDetect. Useful for when snvfitfile is")
+  message("                              provided and custom signatures are used.")
+  message("  -z, --snv8altname=CSNV8   Custom signature name that will be considered as SNV8")
+  message("                              input for HRDetect. Useful for when snvfitfile is")
+  message("                              provided and custom signatures are used.")
+  message("  -X, --svfitfile=SVFF      SVFF is the file name of an rData file containing a Fit")
+  message("                              or FitMS result object. This parameter should be used")
+  message("                              when the user wants to customise the rearr fit outside")
+  message("                              the HRDetect pipeline, e.g. using the signatureFit")
+  message("                              command line script. If custom signatures were used,")
+  message("                              values CSV3 and CSV5 can be used to specify which")
+  message("                              custom signatures correspond to the HRDetect parameters")
+  message("                              SV3 and SV5.")
+  message("  -Y, --sv3altname=CSV3     Custom signature name that will be considered as SV3")
+  message("                              input for HRDetect. Useful for when svfitfile is")
+  message("                              provided and custom signatures are used.")
+  message("  -Z, --sv5altname=CSV5     Custom signature name that will be considered as SV5")
+  message("                              input for HRDetect. Useful for when svfitfile is")
+  message("                              provided and custom signatures are used.")
+  message("  -e, --genomev=GENOMEV     Genome version to be used: hg19, hg38 or mm10. If not")
+  message("                              specified GENOMEV=hg19.")
+  message("  -n, --nparallel=NPARALLEL Number of parallel CPUs to be used")
+  message("  -f, --nbootFit=NBOOTFIT   Number of bootstrap to be used in signature fit. If")
+  message("                              not specified NBOOTFIT=100.")
+  message("  -r, --randomSeed=SEED     Specify a random seed to obtain always the same")
+  message("                              identical results.")
+  message("  -h, --help                Show this explanation.")
+  message(" ")
+}
+
+# get options, using the spec as defined by the enclosed list.
+# we read the options from the default: commandArgs(TRUE).
+spec = matrix(c(
+  'input',         'i', 1, "character",
+  'help',          'h', 0, "logical",
+  'bootstrap',     'b', 0, "logical",
+  'outdir',        'o', 1, "character",
+  'snvsigversion', 's', 1, "character",
+  'svsigversion',  'S', 1, "character",
+  'organ',         'O', 1, "character",
+  'snvsignames',   'l', 1, "character",
+  'svsignames',    'L', 1, "character",
+  'filtertype',    't', 1, "character",
+  'thresholdperc', 'p', 1, "double",
+  'giniscaling',   'd', 1, "double",
+  'snvfitfile',    'x', 1, "character",
+  'snv3altname',   'y', 1, "character",
+  'snv8altname',   'z', 1, "character",
+  'svfitfile',     'X', 1, "character",
+  'sv3altname',    'Y', 1, "character",
+  'sv5altname',    'Z', 1, "character",
+  'nparallel',     'n', 1, "double",
+  'genomev',       'e', 1, "character",
+  'nbootFit',      'f', 1, "double",
+  'randomSeed',    'r', 1, "double"
+), byrow=TRUE, ncol=4)
+
+# collect the options
+opt = getopt(spec)
+
+# if help was asked for print a friendly message
+# and exit with a zero error code
+if ( !is.null(opt$help) ) {
+  how_to()
+  q(status=0,save = "no")
+}
+
+# get the input parameters
+
+if ( !is.null(opt$bootstrap) ) {
+  bootstrap_scores <- TRUE
+}else{
+  bootstrap_scores <- FALSE
+}
+
+if ( is.null(opt$input ) ) {
+  message("[error hrDetect script] Missing INPUTTABLE. Quit.\n")
+  how_to()
+  q(status=1,save = "no")
+}
+
+if ( is.null(opt$outdir) ) {
+  opt$outdir = "hrDetectResults/"
+}
+
+if ( !is.null(opt$snvsigversion) ) {
+  snvsigversion <- opt$snvsigversion
+}else{
+  snvsigversion <- "RefSigv2"
+}
+
+if ( !is.null(opt$snvsignames) ) {
+  snvsignames <- unlist(strsplit(opt$snvsignames,split = ","))
+}else{
+  snvsignames <- NULL
+}
+
+if ( !is.null(opt$svsigversion) ) {
+  svsigversion <- opt$svsigversion
+}else{
+  svsigversion <- "RefSigv1"
+}
+
+if ( !is.null(opt$svsignames) ) {
+  svsignames <- unlist(strsplit(opt$svsignames,split = ","))
+}else{
+  svsignames <- NULL
+}
+
+if ( is.null(opt$nparallel) ) {
+  opt$nparallel <- 1
+}
+if ( is.null(opt$nbootFit) ) {
+  opt$nbootFit <- 100
+}
+
+if ( !is.null(opt$genomev) ) {
+  genomev <- opt$genomev
+}else{
+  genomev <- "hg19"
+}
+
+if ( !is.null(opt$filtertype) ) {
+  filtertype <- opt$filtertype
+}else{
+  filtertype <- "fixedThreshold"
+}
+
+if ( !is.null(opt$thresholdperc) ) {
+  thresholdperc <- opt$thresholdperc
+}else{
+  thresholdperc <- 5
+}
+
+if ( !is.null(opt$giniscaling) ) {
+  giniscaling <- opt$giniscaling
+}else{
+  giniscaling <- 10
+}
+
+library(signature.tools.lib)
+
+if(!is.null(opt$snvfitfile)){
+  if(file.exists(opt$snvfitfile)){
+    custom_subsFit <- loadFitFromFile(opt$snvfitfile)
+    message("[info hrDetect script] subs fit file ",opt$snvfitfile," loaded.")
+  }else{
+    message("[error hrDetect script] subs fit file ",opt$snvfitfile," does not exist.")
+    q(status=1,save = "no")
+  }
+}else{
+  custom_subsFit <- NULL
+}
+
+if(!is.null(opt$svfitfile)){
+  if(file.exists(opt$svfitfile)){
+    custom_rearrFit <- loadFitFromFile(opt$svfitfile)
+    message("[info hrDetect script] rearr fit file ",opt$svfitfile," loaded.")
+  }else{
+    message("[error hrDetect script] rearr fit file ",opt$svfitfile," does not exist.")
+    q(status=1,save = "no")
+  }
+}else{
+  custom_rearrFit <- NULL
+}
+
+input_table <- opt$input
+outdir <- opt$outdir
+nparallel <- opt$nparallel
+organ <- opt$organ
+nboots <- opt$nbootFit
+randomSeed <- opt$randomSeed
+
+dir.create(outdir,showWarnings = FALSE,recursive = TRUE)
+
+#retrieve samples and file names to be used from the files table
+if(file.exists(input_table)){
+  input_t <- read.table(input_table,sep = "\t",header = TRUE,check.names = FALSE,stringsAsFactors = FALSE)
+}else{
+  message("[error hrDetect script] input table ",input_table," does not exist.")
+  q(status=1,save = "no")
+}
+
+#initialise input variables
+samples <- NULL
+SNV_vcf_files <- NULL
+SNV_tab_files <- NULL
+Indels_vcf_files <- NULL
+Indels_tab_files <- NULL
+CNV_tab_files <- NULL
+SV_bedpe_files <- NULL
+
+#read input file lists
+if ("sample" %in% colnames(input_t)) {
+  samples <- input_t$sample
+}
+if ("SNV_vcf_files" %in% colnames(input_t)) {
+  SNV_vcf_files <- input_t$SNV_vcf_files
+  names(SNV_vcf_files) <- samples
+}
+if ("SNV_tab_files" %in% colnames(input_t)) {
+  SNV_tab_files <- input_t$SNV_tab_files
+  names(SNV_tab_files) <- samples
+}
+if ("Indels_vcf_files" %in% colnames(input_t)) {
+  Indels_vcf_files <- input_t$Indels_vcf_files
+  names(Indels_vcf_files) <- samples
+}
+if ("Indels_tab_files" %in% colnames(input_t)) {
+  Indels_tab_files <- input_t$Indels_tab_files
+  names(Indels_tab_files) <- samples
+}
+if ("CNV_tab_files" %in% colnames(input_t)) {
+  CNV_tab_files <- input_t$CNV_tab_files
+  names(CNV_tab_files) <- samples
+}
+if ("SV_bedpe_files" %in% colnames(input_t)) {
+  SV_bedpe_files <- input_t$SV_bedpe_files
+  names(SV_bedpe_files) <- samples
+}
+
+#run HRDetect
+hrdet_res <- HRDetect_pipeline(genome.v = genomev,
+                               SNV_vcf_files = SNV_vcf_files,
+                               SNV_tab_files = SNV_tab_files,
+                               Indels_vcf_files = Indels_vcf_files,
+                               Indels_tab_files = Indels_tab_files,
+                               CNV_tab_files = CNV_tab_files,
+                               SV_bedpe_files = SV_bedpe_files,
+                               bootstrapHRDetectScores = bootstrap_scores,
+                               SNV_signature_version = snvsigversion,
+                               SNV_signature_names = snvsignames,
+                               SV_signature_version = svsigversion,
+                               SV_signature_names = svsignames,
+                               exposureFilterTypeFit = filtertype,
+                               threshold_percentFit = thresholdperc,
+                               giniThresholdScalingFit = giniscaling,
+                               subs_fit_obj = custom_subsFit,
+                               rearr_fit_obj = custom_rearrFit,
+                               customNameSNV3 = opt$snv3altname,
+                               customNameSNV8 = opt$snv8altname,
+                               customNameSV3 = opt$sv3altname,
+                               customNameSV5 = opt$sv5altname,
+                               organ = organ,
+                               nbootFit = nboots,
+                               randomSeed = randomSeed,
+                               nparallel = nparallel)
+
+if(!is.null(hrdet_res)){
+
+  #save object
+  save(hrdet_res,file = paste0(outdir,"/hrdet_res.rData"))
+
+  #saving tables
+  message("[info hrDetect script] writing table data_matrix...")
+  write.table(hrdet_res$data_matrix,sep = "\t",
+              file = paste0(outdir,"/data_matrix.tsv"),
+              col.names = TRUE,row.names = TRUE,quote = FALSE)
+
+  # saving annotated mutations
+  if(!is.null(hrdet_res$annotated_mutations_subs)){
+    message("[info hrDetect script] writing annotated subs...")
+    write.table(hrdet_res$annotated_mutations_subs,sep = "\t",
+                file = paste0(outdir,"/annotated_mutations_subs.tsv"),
+                col.names = TRUE,row.names = FALSE,quote = FALSE)
+  }
+  if(!is.null(hrdet_res$annotated_mutations_rearr)){
+    message("[info hrDetect script] writing annotated rearr...")
+    write.table(hrdet_res$annotated_mutations_rearr,sep = "\t",
+                file = paste0(outdir,"/annotated_mutations_rearr.tsv"),
+                col.names = TRUE,row.names = FALSE,quote = FALSE)
+  }
+
+  if(!is.null(hrdet_res$hrdetect_output)){
+    message("[info hrDetect script] writing table hrdetect_output...")
+    write.table(hrdet_res$hrdetect_output,sep = "\t",
+                file = paste0(outdir,"/hrdetect_output.tsv"),
+                col.names = TRUE,row.names = TRUE,quote = FALSE)
+
+    if(!is.null(hrdet_res$SNV_catalogues)){
+      message("[info hrDetect script] writing SNV catalogues and exposures...")
+      write.table(hrdet_res$SNV_catalogues,sep = "\t",
+                  file = paste0(outdir,"/SNV_catalogues.tsv"),
+                  col.names = TRUE,row.names = TRUE,quote = FALSE)
+      plotSignatures(signature_data_matrix = hrdet_res$SNV_catalogues,
+                     output_file = paste0(outdir,"/SNV_catalogues.pdf"))
+      write.table(hrdet_res$exposures_subs,sep = "\t",
+                  file = paste0(outdir,"/Exposures_subs.tsv"),
+                  col.names = TRUE,row.names = TRUE,quote = FALSE)
+      plotFitResults(hrdet_res$fitRes_subs,outdir = paste0(outdir,"/subsfit/"))
+    }
+    if(!is.null(hrdet_res$SV_catalogues)){
+      message("[info hrDetect script] writing SV catalogues and exposures...")
+      write.table(hrdet_res$SV_catalogues,sep = "\t",
+                  file = paste0(outdir,"/SV_catalogues.tsv"),
+                  col.names = TRUE,row.names = TRUE,quote = FALSE)
+      plotSignatures(signature_data_matrix = hrdet_res$SV_catalogues,
+                     output_file = paste0(outdir,"/SV_catalogues.pdf"))
+      write.table(hrdet_res$exposures_rearr,sep = "\t",
+                  file = paste0(outdir,"/Exposures_rearr.tsv"),
+                  col.names = TRUE,row.names = TRUE,quote = FALSE)
+      plotFitResults(hrdet_res$fitRes_rearr,outdir = paste0(outdir,"/rearrfit/"))
+    }
+
+    if(!is.null(hrdet_res$indels_classification_table)){
+      message("[info hrDetect script] writing table indels_classification_table...")
+      write.table(hrdet_res$indels_classification_table,sep = "\t",
+                  file = paste0(outdir,"/indels_classification_table.tsv"),
+                  col.names = TRUE,row.names = FALSE,quote = FALSE)
+    }
+
+    #plotting
+    message("[info hrDetect script] plotting HRDetect contributions...")
+    plot_HRDetect_Contributions(file_name = paste0(outdir,"/HRDetect_contributions.pdf"),
+                                       hrdetect_output = hrdet_res$hrdetect_output)
+
+    message("[info hrDetect script] plotting HRDetect overall plot...")
+    plot_HRDetect_overall(file_name = paste0(outdir,"/HRDetect_overall.jpg"),
+                          hrdetect_output = hrdet_res$hrdetect_output)
+
+    if (!is.null(hrdet_res$q_5_50_95)) {
+      message("[info hrDetect script] writing table hrdetect_output_confidence...")
+      write.table(hrdet_res$q_5_50_95,sep = "\t",
+                  file = paste0(outdir,"/hrdetect_output_confidence.tsv"),
+                  col.names = TRUE,row.names = TRUE,quote = FALSE)
+      message("[info hrDetect script] plotting HRDetect with Bootstrap...")
+      plot_HRDetect_BootstrapScores(outdir = outdir,
+                                    hrdetect_res = hrdet_res)
+    }
+
+    #genomeplots
+    if(!is.null(SNV_vcf_files)){
+      dir.create(paste0(outdir,"/genomeplots/"),showWarnings = FALSE,recursive = TRUE)
+      for (s in samples) {
+        SNV_vcf_file <- SNV_vcf_files[s]
+        if(!is.null(SNV_vcf_file)){
+          if(is.na(SNV_vcf_files[s])) SNV_vcf_file <- NULL
+        }
+        if(!is.null(SNV_vcf_file)){
+          message("[info hrDetect script] generating genomeplot for ",s,"...")
+          genomePlot(subsVcf.file = SNV_vcf_file,
+                     indelsVcf.file = Indels_vcf_files[s],
+                     cnvsTab.file = CNV_tab_files[s],
+                     rearrBedpe.file = SV_bedpe_files[s],
+                     sampleID = s,
+                     genome.v = genomev,
+                     out_path = paste0(outdir,"/genomeplots/"))
+        }else{
+          message("[warning hrDetect script] skipping genomeplot for ",s," because of missing SNV VCF file.")
+        }
+      }
+    }
+    message("[info hrDetect script] done!")
+  }else{
+    message("[warning hrDetect script] HRDetect_pipeline did not return HRDetect scores.")
+  }
+}else{
+  message("[warning hrDetect script] HRDetect_pipeline returned NULL.")
+}
+
+
+q(status = 0,save = "no")

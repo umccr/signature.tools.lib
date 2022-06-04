@@ -4,11 +4,14 @@
 \alias{plot_HRDetect_Contributions}
 \title{plot_HRDetect_Contributions}
 \usage{
-plot_HRDetect_Contributions(file_name, hrdetect_output,
-  par_title = "HRDetect Score and Contributions")
+plot_HRDetect_Contributions(
+  file_name,
+  hrdetect_output,
+  par_title = "HRDetect Score and Contributions"
+)
 }
 \arguments{
-\item{file_name}{name of the output file (jpg)}
+\item{file_name}{name of the output file (pdf)}
 
 \item{hrdetect_output}{output of HRDetect, containing contributions of each feature}
 
