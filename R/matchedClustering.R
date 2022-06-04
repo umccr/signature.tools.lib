@@ -58,7 +58,7 @@ matchedClustering <- function(distMatrix,ns,maxMatch=TRUE,parallel=FALSE,nparall
     # library(foreach)
     # library(doParallel)
     # library(doMC)
-    doMC::registerDoMC(nparallel)
+    doParallel::registerDoParallel(nparallel)
     #run initialisation in parallel!
     res_list <- foreach::foreach(i=1:(nruns-1)) %dopar%{
       jlist <- list()
@@ -181,7 +181,7 @@ matchedClustering <- function(distMatrix,ns,maxMatch=TRUE,parallel=FALSE,nparall
   
   #finally, convert to ns partitions/clusters
   clusters <- matrix(rep(1:ns,nruns),nrow = ns)
-  final_res <- clusters[order(combined_matrices[[1]])]
+  final_res <- clusters[order(unlist(combined_matrices[[1]]))]
   names(final_res) <- colnames(distMatrix)
   return(final_res)
 }

@@ -1,6 +1,8 @@
 
-#' Mutational Signatures Fit
+#' Mutational Signatures Fit (deprecated)
 #' 
+#' This function is deprecated. You can still use it, but we advise to use the function Fit instead, 
+#' which provides a unified interface for basic signature fit with/without bootstrap.
 #' Fit a given set of mutational signatures into mutational catalogues to extimate the activty/exposure of each of the given signatures in the catalogues.
 #' 
 #' @param cat catalogue matrix, patients as columns, channels as rows
@@ -11,6 +13,7 @@
 #' @param doRound round the exposures to the closest integer
 #' @param verbose use FALSE to suppress messages
 #' @param n_sa_iter set max Simulated Annealing iterations if method==SA
+#' @param showDeprecated set to FALSE to switch off the deprecated warning messsage
 #' @return returns the activities/exposures of the signatures in the given sample
 #' @keywords mutational signatures fit
 #' @export
@@ -23,21 +26,24 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
                          alpha = -1, #set alpha to -1 to avoid Bleeding Filter
                          doRound = TRUE, #round the exposures to the closest integer
                          verbose = TRUE, #use FALSE to suppress messages
-                         n_sa_iter = 500){ 
+                         n_sa_iter = 500,
+                         showDeprecated = TRUE){ 
+  if(showDeprecated) message("[warning SignatureFit] SignatureFit is deprecated, please use Fit instead with useBootstrap=FALSE. You can turn off this warning with showDeprecated=FALSE")
+  
   if(method=="KLD"){
-    if(verbose) message("SignatureFit, objective function: KLD")
+    if(verbose) message("[info SignatureFit] SignatureFit, objective function: KLD")
     
     #Fit using the given signatures
     nnlm_res <- NNLM::nnlm(as.matrix(signature_data_matrix),as.matrix(cat),loss = "mkl",method = "lee")
     fit_KLD <- KLD(cat,as.matrix(signature_data_matrix) %*% nnlm_res$coefficients)
     exposures <- nnlm_res$coefficients
-    if(verbose) message("Optimisation terminated, KLD=",fit_KLD)
+    if(verbose) message("[info SignatureFit] Optimisation terminated, KLD=",fit_KLD)
     if(alpha >= 0){ #negative alpha skips Bleeding Filter
       #apply bleeding filter
       if(bf_method=="CosSim"){
-        if(verbose) message("Applying Bleeding Filter (Cosine Similarity) with alpha=",alpha*100,"%")
+        if(verbose) message("[info SignatureFit] Applying Bleeding Filter (Cosine Similarity) with alpha=",alpha*100,"%")
       }else if (bf_method=="KLD"){
-        if(verbose) message("Applying Bleeding Filter (KLD) with alpha=",alpha*100,"%")
+        if(verbose) message("[info SignatureFit] Applying Bleeding Filter (KLD) with alpha=",alpha*100,"%")
       }
       for(i in 1:ncol(nnlm_res$coefficients)){
         if(bf_method=="CosSim"){
@@ -53,7 +59,7 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
         }
       }
       fit_KLD_afterBF <- KLD(cat,as.matrix(signature_data_matrix) %*% exposures)
-      if(verbose) message("New fit after Bleeding Filter, KLD=",fit_KLD_afterBF," (",sprintf("%.3f",(fit_KLD_afterBF - fit_KLD)/fit_KLD*100),"% increase)")
+      if(verbose) message("[info SignatureFit] New fit after Bleeding Filter, KLD=",fit_KLD_afterBF," (",sprintf("%.3f",(fit_KLD_afterBF - fit_KLD)/fit_KLD*100),"% increase)")
     }
   }else if(method=="SA"){
     # library(GenSA)
@@ -63,7 +69,7 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
     
     doParallel::registerDoParallel(4)
     
-    if(verbose) message("SignatureFit, objective function: SA")
+    if(verbose) message("[info SignatureFit] SignatureFit, objective function: SA")
     
     sig <- signature_data_matrix
     
@@ -75,7 +81,7 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
       exp_tmp <- rep(0, ncol(sig))
       names(exp_tmp) <- names(sig)
       if(nmut>0){
-        if(verbose) message("Analyzing " ,  j, " of ", ncol(cat), " sample name ", colnames(cat[j]))
+        if(verbose) message("[info SignatureFit] Analyzing " ,  j, " of ", ncol(cat), " sample name ", colnames(cat[j]))
         
         ## Compute the start solution for the sim. annealing
         ss <- startSolution(sig, curr_cat)
@@ -93,10 +99,10 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
         
         ## Apply the bleeding Filter to remove the 'unnecessary' signatures
         if(bf_method=="CosSim"){
-          if(verbose) message("Applying Bleeding Filter (Cosine Similarity) with alpha=",alpha*100,"%")
+          if(verbose) message("[info SignatureFit] Applying Bleeding Filter (Cosine Similarity) with alpha=",alpha*100,"%")
           exp_tmp <-  bleedingFilter(exp_tmp, sig, curr_cat, alpha)
         }else if (bf_method=="KLD"){
-          if(verbose) message("Applying Bleeding Filter (KLD) with alpha=",alpha*100,"%")
+          if(verbose) message("[info SignatureFit] Applying Bleeding Filter (KLD) with alpha=",alpha*100,"%")
           exp_tmp <-  bleedingFilterKLD(exp_tmp, sig, curr_cat, alpha)
         }
         
@@ -113,7 +119,7 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
 
     
   }else if(method=="NNLS"){
-    if(verbose) message("SignatureFit, method: NNLS")
+    if(verbose) message("[info SignatureFit] SignatureFit, method: NNLS")
     
     exposures <- matrix(NA,ncol = ncol(cat),nrow = ncol(signature_data_matrix))
     colnames(exposures) <- colnames(cat)
@@ -125,14 +131,14 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
     }
     
     fit_KLD <- KLD(cat,as.matrix(signature_data_matrix) %*% exposures)
-    if(verbose) message("Optimisation terminated, KLD=",fit_KLD)
+    if(verbose) message("[info SignatureFit] Optimisation terminated, KLD=",fit_KLD)
     
     if(alpha >= 0){ #negative alpha skips Bleeding Filter
       #apply bleeding filter
       if(bf_method=="CosSim"){
-        if(verbose) message("Applying Bleeding Filter (Cosine Similarity) with alpha=",alpha*100,"%")
+        if(verbose) message("[info SignatureFit] Applying Bleeding Filter (Cosine Similarity) with alpha=",alpha*100,"%")
       }else if (bf_method=="KLD"){
-        if(verbose) message("Applying Bleeding Filter (KLD) with alpha=",alpha*100,"%")
+        if(verbose) message("[info SignatureFit] Applying Bleeding Filter (KLD) with alpha=",alpha*100,"%")
       }
       for (i in 1:ncol(exposures)){
         if(bf_method=="CosSim"){
@@ -149,9 +155,9 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
       }
     }
     fit_KLD_afterBF <- KLD(cat,as.matrix(signature_data_matrix) %*% exposures)
-    if(verbose) message("New fit after Bleeding Filter, KLD=",fit_KLD_afterBF," (",sprintf("%.3f",(fit_KLD_afterBF - fit_KLD)/fit_KLD*100),"% increase)")
+    if(verbose) message("[info SignatureFit] New fit after Bleeding Filter, KLD=",fit_KLD_afterBF," (",sprintf("%.3f",(fit_KLD_afterBF - fit_KLD)/fit_KLD*100),"% increase)")
   }else{
-    stop("SignatureFit error. Unknown method specified.")
+    stop("[error SignatureFit] Unknown method specified.")
   }
   exposures[exposures < .Machine$double.eps] <- 0
   if(doRound) exposures <- round(exposures)
@@ -160,8 +166,10 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
 
 
 
-#' Mutational Signatures Fit with Bootstrap
+#' Mutational Signatures Fit with Bootstrap (deprecated)
 #' 
+#' This function is deprecated. You can still use it, but we advise to use the function Fit instead, 
+#' which provides a unified interface for basic signature fit with/without bootstrap.
 #' Fit a given set of mutational signatures into mutational catalogues to extimate the 
 #' activty/exposure of each of the given signatures in the catalogues. Implementation 
 #' of method similar to Huang et al. 2017, Detecting presence of mutational signatures with 
@@ -173,7 +181,9 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
 #' @param cat catalogue matrix, patients as columns, channels as rows
 #' @param signature_data_matrix signatures, signatures as columns, channels as rows
 #' @param nboot number of bootstraps to use, more bootstraps more accurate results
+#' @param exposureFilterType use either fixedThreshold or giniScaledThreshold. When using fixedThreshold, exposures will be removed based on a fixed percentage with respect to the total number of mutations (threshold_percent will be used). When using giniScaledThreshold each signature will used a different threshold calculated as (1-Gini(signature))*giniThresholdScaling
 #' @param threshold_percent threshold in percentage of total mutations in a sample, only exposures larger than threshold are considered
+#' @param giniThresholdScaling scaling factor for the threshold type giniScaledThreshold, which is based on the Gini score of a signature
 #' @param threshold_p.value p-value to determine whether an exposure is above the threshold_percent. In other words, this is the empirical probability that the exposure is lower than the threshold
 #' @param method KLD or NNLS or SA
 #' @param bf_method bleeding filter method, one of KLD or CosSim, only if bleeding filter is used (alpha>-1)
@@ -183,6 +193,7 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
 #' @param verbose use FALSE to suppress messages
 #' @param n_sa_iter set max Simulated Annealing iterations if method==SA
 #' @param randomSeed set an integer random seed
+#' @param showDeprecated set to FALSE to switch off the deprecated warning messsage
 #' @return returns the activities/exposures of the signatures in the given sample and other information, such as p-values and exposures of individual bootstrap runs.
 #' @keywords mutational signatures fit
 #' @references Huang, X., Wojtowicz, D., & Przytycka, T. M. (2017). Detecting Presence Of Mutational Signatures In Cancer With Confidence. bioRxiv, (October). https://doi.org/10.1101/132597
@@ -190,19 +201,22 @@ SignatureFit <- function(cat, #catalogue, patients as columns, channels as rows
 #' @examples
 #' res <- SignatureFit_withBootstrap(catalogues,signature_data_matrix)
 SignatureFit_withBootstrap <- function(cat, #catalogue, patients as columns, channels as rows
-                          signature_data_matrix, #signatures, signatures as columns, channels as rows
-                          nboot = 100, #number of bootstraps to use, more bootstraps more accurate results
-                          threshold_percent = 5, #threshold in percentage of total mutations in a sample, only exposures larger than threshold are considered
-                          threshold_p.value = 0.05, #p-value to determine whether an exposure is above the threshold_percent. In other words, this is the empirical probability that the exposure is lower than the threshold
-                          method = "KLD", #KLD or SA, just don't use SA or you will wait forever, expecially with many bootstraps. SA is ~1000 times slower than KLD or NNLS
-                          bf_method = "CosSim", #KLD or CosSim, only used if alpha != -1
-                          alpha = -1, #set alpha to -1 to avoid Bleeding Filter
-                          verbose=TRUE, #use FALSE to suppress messages
-                          doRound = FALSE, #round the exposures to the closest integer
-                          nparallel=1, #to use parallel specify >1
-                          n_sa_iter = 500, #only used if  method = "SA"
-                          randomSeed = NULL){ 
-  
+                                       signature_data_matrix, #signatures, signatures as columns, channels as rows
+                                       nboot = 100, #number of bootstraps to use, more bootstraps more accurate results
+                                       exposureFilterType = "fixedThreshold", # or "giniScaledThreshold"
+                                       giniThresholdScaling = 10,
+                                       threshold_percent = 5, #threshold in percentage of total mutations in a sample, only exposures larger than threshold are considered
+                                       threshold_p.value = 0.05, #p-value to determine whether an exposure is above the threshold_percent. In other words, this is the empirical probability that the exposure is lower than the threshold
+                                       method = "KLD", #KLD or SA, just don't use SA or you will wait forever, expecially with many bootstraps. SA is ~1000 times slower than KLD or NNLS
+                                       bf_method = "CosSim", #KLD or CosSim, only used if alpha != -1
+                                       alpha = -1, #set alpha to -1 to avoid Bleeding Filter
+                                       verbose=TRUE, #use FALSE to suppress messages
+                                       doRound = FALSE, #round the exposures to the closest integer
+                                       nparallel=1, #to use parallel specify >1
+                                       n_sa_iter = 500, #only used if  method = "SA"
+                                       randomSeed = NULL,
+                                       showDeprecated = TRUE){ 
+  if(showDeprecated) message("[warning SignatureFit_withBootstrap] SignatureFit_withBootstrap is deprecated, please use Fit instead with useBootstrap=TRUE. You can turn off this warning with showDeprecated=FALSE")
   if(!is.null(randomSeed)){
     set.seed(randomSeed)
   }
@@ -217,25 +231,25 @@ SignatureFit_withBootstrap <- function(cat, #catalogue, patients as columns, cha
     }
     boot_list <- foreach::foreach(j=1:nboot) %dopar% {
       bootcat <- generateRandMuts(cat)
-      SignatureFit(bootcat,signature_data_matrix,method,bf_method,alpha,verbose=verbose,doRound = doRound,n_sa_iter=n_sa_iter)
+      SignatureFit(bootcat,signature_data_matrix,method,bf_method,alpha,verbose=verbose,doRound = doRound,n_sa_iter=n_sa_iter,showDeprecated = F)
     }
   }else{
     boot_list <- list()
     for(i in 1:nboot){
       bootcat <- generateRandMuts(cat)
-      boot_list[[i]] <- SignatureFit(bootcat,signature_data_matrix,method,bf_method,alpha,verbose=verbose,doRound = doRound,n_sa_iter=n_sa_iter)
+      boot_list[[i]] <- SignatureFit(bootcat,signature_data_matrix,method,bf_method,alpha,verbose=verbose,doRound = doRound,n_sa_iter=n_sa_iter,showDeprecated = F)
     }
   }
-
+  
   samples_list <- list()
   for(i in 1:ncol(cat)) {
-    samples_list[[i]] <- matrix(NA,ncol = nboot,nrow = ncol(signature_data_matrix))
-    colnames(samples_list[[i]]) <- 1:nboot
-    row.names(samples_list[[i]]) <- colnames(signature_data_matrix)
+    samples_list[[colnames(cat)[i]]] <- matrix(NA,ncol = nboot,nrow = ncol(signature_data_matrix))
+    colnames(samples_list[[colnames(cat)[i]]]) <- 1:nboot
+    row.names(samples_list[[colnames(cat)[i]]]) <- colnames(signature_data_matrix)
   }
   for(i in 1:nboot){
     for(j in 1:ncol(cat)){
-      samples_list[[j]][,i] <- boot_list[[i]][,j]
+      samples_list[[colnames(cat)[j]]][,i] <- boot_list[[i]][,j]
     }
   }
   E_median_notfiltered <- matrix(NA,nrow = ncol(signature_data_matrix),ncol = ncol(cat))
@@ -252,9 +266,22 @@ SignatureFit_withBootstrap <- function(cat, #catalogue, patients as columns, cha
   
   for(i in 1:ncol(cat)) {
     if(sum(cat[,i])>0){
-      boots_perc <- samples_list[[i]]/matrix(apply(samples_list[[i]],2,sum),byrow = TRUE,nrow = nrow(samples_list[[i]]),ncol = ncol(samples_list[[i]]))*100
-      p.values <- apply(boots_perc <= threshold_percent,1,sum)/nboot
-      median_mut <- apply(samples_list[[i]],1,median)
+      boots_perc <- samples_list[[colnames(cat)[i]]]/matrix(apply(samples_list[[colnames(cat)[i]]],2,sum),byrow = TRUE,nrow = nrow(samples_list[[colnames(cat)[i]]]),ncol = ncol(samples_list[[colnames(cat)[i]]]))*100
+      
+      
+      if(exposureFilterType=="giniScaledThreshold"){
+        sigInvGini <- 1 - apply(signature_data_matrix,2,giniCoeff)
+        giniThresholdPerc <- giniThresholdScaling*sigInvGini
+        # set to zero differently for each signature
+        p.values <- c()
+        for(j in 1:length(giniThresholdPerc)) p.values <- c(p.values,sum(boots_perc[j,]<=giniThresholdPerc[j])/nboot)
+        names(p.values) <- colnames(signature_data_matrix)
+      }else if(exposureFilterType=="fixedThreshold"){
+        p.values <- apply(boots_perc <= threshold_percent,1,sum)/nboot
+      }
+      
+      
+      median_mut <- apply(samples_list[[colnames(cat)[i]]],1,median)
       E_median_notfiltered[,i] <- median_mut
       E_p.values[,i] <- p.values
       
@@ -303,7 +330,6 @@ SignatureFit_withBootstrap <- function(cat, #catalogue, patients as columns, cha
   res$n_sa_iter <- n_sa_iter
   return(res)
 }
-
 
 #' Mutational Signatures Fit with Bootstrap Analysis
 #' 
@@ -360,7 +386,7 @@ SignatureFit_withBootstrap_Analysis <- function(outdir, #output directory for th
   file_store <- paste0(outdir,"SigFit_withBootstrap_Summary_m",method,"_bfm",bf_method,"_alpha",alpha,"_tr",threshold_percent,"_p",threshold_p.value,".rData")
   if(file.exists(file_store)){
     load(file_store)
-    message("Bootstrap Signature Fits loaded from file")
+    message("[info SignatureFit_withBootstrap_Analysis] Bootstrap Signature Fits loaded from file")
   }else{
     res <- SignatureFit_withBootstrap(cat = cat,
                                           signature_data_matrix = signature_data_matrix,
@@ -389,7 +415,7 @@ bleedingFilter <- function(e, sig,  sample, alpha){
   ## Compute the cosine similarity between the current solution and the catalogue
   #sim_smpl <- computeSimSample(e, sample, sig)
   sim_smpl <- as.matrix(sig) %*% e
-  val <- cos.sim(sample, sim_smpl)
+  val <- cos_sim(sample, sim_smpl)
   
   e_orig <- e
   delta <- 0
@@ -413,7 +439,7 @@ bleedingFilter <- function(e, sig,  sample, alpha){
           e2[i] <- 0
           #sim_smpl <- computeSimSample(e2, sample, sig)
           sim_smpl <- as.matrix(sig) %*% e2
-          sim_m[i,j] <- cos.sim(sample, sim_smpl)	
+          sim_m[i,j] <- cos_sim(sample, sim_smpl)	
         }
       }
     }
@@ -523,27 +549,12 @@ objSimAnnelaingFunction <- function(x, xsample, xsignature){
 
 
 #' @export
-plot.exposures <- function(exposures,output_file,dpi=300){
-  # library("ggplot2")
+plotExposures <- function(exposures,
+                          output_file=NULL){
   
-  # Set up the vectors                           
-  signatures.names <- colnames(exposures)
-  sample.names <- row.names(exposures)
-  
-  # Create the data frame
-  df <- expand.grid(sample.names,signatures.names)
-  df$value <- unlist(as.data.frame(exposures))   
-  df$labels <- sprintf("%.0f", df$value)
-  df$labels[df$value==0] <- ""
-  
-  #Plot the Data (500+150*nsamples)x1200
-  g <- ggplot2::ggplot(df, ggplot2::aes(Var1, Var2)) + ggplot2::geom_point(ggplot2::aes(size = value), colour = "green") + ggplot2::theme_bw() + ggplot2::xlab("") + ggplot2::ylab("")
-  g <- g + ggplot2::scale_size_continuous(range=c(0,10)) + ggplot2::geom_text(ggplot2::aes(label = labels))
-  g + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, size=14),
-                     axis.text.y = ggplot2::element_text(vjust = 1, size=14))
-  w <- (500+150*length(sample.names))/dpi
-  h <- (500+150*length(signatures.names))/dpi
-  ggplot2::ggsave(filename = output_file,dpi = dpi,height = h,width = w,limitsize = FALSE)
+  plotMatrix(dataMatrix = exposures,
+             output_file = output_file,
+             ndigitsafterzero = 0)
 }
 
 #' Export Signature Fit with bootstrap to JSON
@@ -830,8 +841,8 @@ plot_SignatureFit_withBootstrap <- function(outdir,
   file_plot_exp <- paste0(outdir,"SigFit_withBootstrap_Exposures_m",res$method,"_bfm",res$bf_method,"_alpha",res$alpha,"_tr",res$threshold_percent,"_p",res$threshold_p.value,".jpg")
   file_plot_expProp <- paste0(outdir,"SigFit_withBootstrap_Exposures_m",res$method,"_bfm",res$bf_method,"_alpha",res$alpha,"_tr",res$threshold_percent,"_p",res$threshold_p.value,"_prop.jpg")
   
-  plot.CosSimMatrix(as.data.frame(exposures),output_file = file_plot_exp,ndigitsafterzero = 0)
-  plot.CosSimMatrix(as.data.frame(exposuresProp),output_file = file_plot_expProp,ndigitsafterzero = 0)
+  plotCosSimMatrix(as.data.frame(exposures),output_file = file_plot_exp,ndigitsafterzero = 0)
+  plotCosSimMatrix(as.data.frame(exposuresProp),output_file = file_plot_expProp,ndigitsafterzero = 0)
   write.table(exposures,file = file_table_exp,
               sep = "\t",col.names = TRUE,row.names = TRUE,quote = FALSE)
   
@@ -855,7 +866,7 @@ plot_SignatureFit_withBootstrap <- function(outdir,
       fitIsEmpty <- sum(res$E_median_filtered[,i])==0
       unassigned_mut <- sprintf("%.2f",(sum(res$cat[,i,drop=FALSE]) - sum(reconstructed_with_median[,i,drop=FALSE]))/sum(res$cat[,i,drop=FALSE])*100)
       percentdiff <- sprintf("%.2f",sum(abs(res$cat[,i,drop=FALSE] - reconstructed_with_median[,i,drop=FALSE]))/sum(res$cat[,i,drop=FALSE])*100)
-      cos_sim <- sprintf("%.2f",cos.sim(res$cat[,i,drop=FALSE],reconstructed_with_median[,i,drop=FALSE]))
+      cos_sim <- sprintf("%.2f",cos_sim(res$cat[,i,drop=FALSE],reconstructed_with_median[,i,drop=FALSE]))
       if(type_of_mutations=="subs"){
         #1 original
         plotSubsSignatures(signature_data_matrix = res$cat[,i,drop=FALSE],add_to_titles = "Catalogue",mar=c(6,3,5,2))

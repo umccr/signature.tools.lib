@@ -4,9 +4,16 @@
 \alias{plotSubsSignatures}
 \title{Plot Substitution Signatures or Catalogues}
 \usage{
-plotSubsSignatures(signature_data_matrix, output_file = NULL,
-  plot_sum = TRUE, overall_title = "", add_to_titles = NULL,
-  mar = NULL, howManyInOnePage = 100, ncolumns = 3)
+plotSubsSignatures(
+  signature_data_matrix,
+  output_file = NULL,
+  plot_sum = TRUE,
+  overall_title = "",
+  add_to_titles = NULL,
+  mar = NULL,
+  howManyInOnePage = 100,
+  ncolumns = 1
+)
 }
 \arguments{
 \item{signature_data_matrix}{matrix of signatures, signatures as columns and channels as rows}
@@ -16,6 +23,8 @@ plotSubsSignatures(signature_data_matrix, output_file = NULL,
 \item{plot_sum}{whether the sum of the channels should be plotted. If plotting signatures this should be FALSE, but if plotting sample catalogues, this can be set to TRUE to display the number of mutations in each sample.}
 
 \item{overall_title}{set the overall title of the plot}
+
+\item{add_to_titles}{text to be added to the titles of each catalogue plot}
 
 \item{mar}{set the option par(mar=mar)}
 
